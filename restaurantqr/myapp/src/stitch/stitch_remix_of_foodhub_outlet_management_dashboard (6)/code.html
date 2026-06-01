@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FoodHub User Management Dashboard</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#F26522",
+              "background-light": "#FAFAFA",
+              "background-dark": "#111827",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "8px",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item-active {
+            background-color: #FFF1EB;
+            color: #F26522;
+            border-radius: 8px;
+        }
+        .dark .sidebar-item-active {
+            background-color: rgba(242, 101, 34, 0.1);
+            color: #F26522;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 min-h-screen flex">
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-slate-900 overflow-y-auto">
+<div class="p-6">
+<h1 class="text-primary text-2xl font-bold">FoodHub</h1>
+</div>
+<nav class="px-3 space-y-1">
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">storefront</span>
+<span class="font-medium text-sm">Outlet Management</span>
+</a>
+<a class="flex items-center px-3 py-2 sidebar-item-active transition-colors" href="#">
+<span class="material-icons-outlined mr-3">group</span>
+<span class="font-medium text-sm">User Management</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">account_balance</span>
+<span class="font-medium text-sm">Investor Management</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">inventory_2</span>
+<span class="font-medium text-sm">Inventory Management</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">shopping_cart</span>
+<span class="font-medium text-sm">Order Management</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">cloud_queue</span>
+<span class="font-medium text-sm">Cloud Kitchen</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">notifications</span>
+<span class="flex-1 font-medium text-sm">Notifications</span>
+<span class="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+</a>
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">location_on</span>
+<span class="font-medium text-sm">Location &amp; Delivery</span>
+</a>
+<div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+<a class="flex items-center px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors" href="#">
+<span class="material-icons-outlined mr-3">settings</span>
+<span class="font-medium text-sm">Reports &amp; Settings</span>
+</a>
+</div>
+</nav>
+</aside>
+<main class="flex-1 flex flex-col min-w-0">
+<header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
+<h2 class="text-xl font-semibold text-slate-900 dark:text-white">User Management</h2>
+<button class="bg-primary hover:opacity-90 text-white px-4 py-2 rounded-lg font-medium flex items-center transition-all">
+<span class="material-icons-outlined mr-2">add</span>
+                Create User
+            </button>
+</header>
+<div class="p-8 pb-4">
+<div class="flex flex-wrap items-center gap-4">
+<div class="relative">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 pr-10 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-300">
+<option>All Roles</option>
+<option>Admin</option>
+<option>Staff</option>
+</select>
+<span class="material-icons-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 pr-10 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-300">
+<option>All Status</option>
+<option>Active</option>
+<option>Inactive</option>
+</select>
+<span class="material-icons-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 pr-10 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-300">
+<option>All Outlets</option>
+<option>Downtown</option>
+<option>West Side</option>
+</select>
+<span class="material-icons-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm">expand_more</span>
+</div>
+<div class="flex-1 relative">
+<span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-300" placeholder="Search users..." type="text"/>
+</div>
+</div>
+</div>
+<div class="px-8 pb-8 flex-1">
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<tr>
+<th class="px-6 py-4 w-12">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Associated Outlet</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Contact Info</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Sarah Johnson</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Company Admin</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Downtown Branch</td>
+<td class="px-6 py-4">
+<div class="text-sm text-slate-600 dark:text-slate-400">sarah.j@foodsystem.com</div>
+<div class="text-xs text-slate-400">+1 (555) 123-4567</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Michael Chen</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Delivery Staff</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">West Side Branch</td>
+<td class="px-6 py-4">
+<div class="text-sm text-slate-600 dark:text-slate-400">m.chen@foodsystem.com</div>
+<div class="text-xs text-slate-400">+1 (555) 234-5678</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Emily Rodriguez</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Vendor</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">East Side Branch</td>
+<td class="px-6 py-4">
+<div class="text-sm text-slate-600 dark:text-slate-400">e.rodriguez@foodsystem.com</div>
+<div class="text-xs text-slate-400">+1 (555) 345-6789</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">David Kim</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Employee</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">North Branch</td>
+<td class="px-6 py-4">
+<div class="text-sm text-slate-600 dark:text-slate-400">d.kim@foodsystem.com</div>
+<div class="text-xs text-slate-400">+1 (555) 456-7890</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<input class="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">Lisa Thompson</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Company Admin</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">South Branch</td>
+<td class="px-6 py-4">
+<div class="text-sm text-slate-600 dark:text-slate-400">l.thompson@foodsystem.com</div>
+<div class="text-xs text-slate-400">+1 (555) 567-8901</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-6 flex items-center justify-between">
+<span class="text-sm text-slate-500 dark:text-slate-400">Showing 1-5 of 156 users</span>
+<div class="flex items-center space-x-1">
+<button class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50">
+<span class="material-icons-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white font-medium text-sm">1</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm">2</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm">16</button>
+<button class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-icons-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<button class="fixed bottom-6 right-6 p-3 bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-800 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-50" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined">dark_mode</span>
+</button>
+
+</body></html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FoodHub Order Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#f36d38",
+              "background-light": "#f9fafb",
+              "background-dark": "#111827",
+              "card-light": "#ffffff",
+              "card-dark": "#1f2937",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex">
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-card-light dark:bg-card-dark fixed h-full z-20 overflow-y-auto scrollbar-hide">
+<div class="p-6">
+<h1 class="text-2xl font-bold text-primary tracking-tight">FoodHub</h1>
+</div>
+<nav class="px-3 space-y-1">
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">storefront</span>
+<span class="text-sm font-medium">Outlet Management</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">person_outline</span>
+<span class="text-sm font-medium">User Management</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">account_balance</span>
+<span class="text-sm font-medium">Investor Management</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">inventory_2</span>
+<span class="text-sm font-medium">Inventory Management</span>
+</a>
+<a class="flex items-center px-3 py-3 text-primary bg-orange-50 dark:bg-orange-900/20 border-r-4 border-primary rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">shopping_cart</span>
+<span class="text-sm font-semibold">Order Management</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">restaurant</span>
+<span class="text-sm font-medium">Cloud Kitchen</span>
+</a>
+<a class="flex items-center justify-between px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<div class="flex items-center">
+<span class="material-icons-outlined text-[20px] mr-3">notifications</span>
+<span class="text-sm font-medium">Notifications</span>
+</div>
+<span class="bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">3</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">location_on</span>
+<span class="text-sm font-medium">Location &amp; Delivery</span>
+</a>
+<a class="flex items-center px-3 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg group" href="#">
+<span class="material-icons-outlined text-[20px] mr-3">settings</span>
+<span class="text-sm font-medium">Reports &amp; Settings</span>
+</a>
+</nav>
+</aside>
+<main class="flex-1 ml-64 p-8">
+<header class="mb-8">
+<h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Order Management</h2>
+<div class="flex flex-wrap items-center gap-4">
+<div class="relative flex-1 min-w-[300px]">
+<span class="material-icons-outlined absolute left-3 top-2.5 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Search orders, customers, or vendors..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center px-4 py-2 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">
+<span class="material-icons-outlined text-[18px] mr-2">calendar_today</span>
+                        Last 7 days
+                        <span class="material-icons-outlined text-[18px] ml-2">expand_more</span>
+</button>
+<button class="flex items-center px-4 py-2 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">
+<span class="material-icons-outlined text-[18px] mr-2">store</span>
+                        All Outlets
+                        <span class="material-icons-outlined text-[18px] ml-2">expand_more</span>
+</button>
+<div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+<button class="px-4 py-1.5 bg-card-light dark:bg-slate-700 shadow-sm rounded-md text-sm font-medium text-slate-800 dark:text-white">QR/Retail</button>
+<button class="px-4 py-1.5 text-sm font-medium text-slate-500 dark:text-slate-400">Bulk</button>
+</div>
+</div>
+</div>
+</header>
+<section class="mb-8 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+<h3 class="font-semibold text-slate-800 dark:text-white">Live Orders</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order ID</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer/Company</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order Type</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vendor</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Delivery Mode</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Amount</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Time</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">ORD-2401</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">John Smith</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">person</span> Retail
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Burger King</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">delivery_dining</span> Delivery
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">$45.99</td>
+<td class="px-6 py-4">
+<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 uppercase">New</span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">2 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-icons-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">ORD-2400</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Tech Corp</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">business</span> Bulk
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Subway</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">shopping_bag</span> Pickup
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">$289.99</td>
+<td class="px-6 py-4">
+<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 uppercase">Preparing</span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">15 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-icons-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">ORD-2399</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Sarah Johnson</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">person</span> Retail
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Pizza Hut</td>
+<td class="px-6 py-4">
+<span class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[16px] mr-1">restaurant</span> Dine-in
+                                </span>
+</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">$32.50</td>
+<td class="px-6 py-4">
+<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 uppercase">Ready</span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">25 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-icons-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="mb-8 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+<h3 class="font-semibold text-slate-800 dark:text-white">Bulk Orders</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Company</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Employee Count</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Event</th>
+<th class="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Schedule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="px-6 py-12 text-center text-sm text-slate-400" colspan="4">
+<span class="material-icons-outlined text-4xl mb-2 opacity-20">inventory</span>
+<p>No active bulk orders currently.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section>
+<h3 class="font-semibold text-slate-800 dark:text-white mb-4">Delivery Management</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">ORD-2401</h4>
+<p class="text-sm text-slate-500">John Smith</p>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 uppercase">Picked</span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">location_on</span>
+                            123 Main St, City
+                        </div>
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">schedule</span>
+                            ETA: 15 mins
+                        </div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center">
+<span class="material-icons-outlined text-[18px] mr-2">map</span>
+                            View Map
+                        </button>
+<button class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg transition-colors">
+<span class="material-icons-outlined">photo</span>
+</button>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">ORD-2402</h4>
+<p class="text-sm text-slate-500">Emma Wilson</p>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 uppercase">In Transit</span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">location_on</span>
+                            456 Park Ave, City
+                        </div>
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">schedule</span>
+                            ETA: 15 mins
+                        </div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center">
+<span class="material-icons-outlined text-[18px] mr-2">map</span>
+                            View Map
+                        </button>
+<button class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg transition-colors">
+<span class="material-icons-outlined">photo</span>
+</button>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">ORD-2403</h4>
+<p class="text-sm text-slate-500">Emma Wilson</p>
+</div>
+<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 uppercase">Delivered</span>
+</div>
+<div class="space-y-3 mb-6">
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">location_on</span>
+                            456 Park Ave, City
+                        </div>
+<div class="flex items-center text-sm text-slate-600 dark:text-slate-400">
+<span class="material-icons-outlined text-[18px] mr-2 text-slate-400">schedule</span>
+                            ETA: 15 mins
+                        </div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center">
+<span class="material-icons-outlined text-[18px] mr-2">map</span>
+                            View Map
+                        </button>
+<button class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 p-2 rounded-lg transition-colors">
+<span class="material-icons-outlined">photo</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<button class="fixed bottom-6 right-6 p-3 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-full shadow-lg z-50" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined dark:hidden">dark_mode</span>
+<span class="material-icons-outlined hidden dark:block">light_mode</span>
+</button>
+
+</body></html>

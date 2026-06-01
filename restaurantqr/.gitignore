@@ -1,0 +1,10 @@
+# Ignore node_modules everywhere
+node_modules/
+
+# Ignore .env files everywhere (this catches server/.env and any others)
+.env
+.env.*
+
+# Ignore build/dist folders
+dist/
+build/

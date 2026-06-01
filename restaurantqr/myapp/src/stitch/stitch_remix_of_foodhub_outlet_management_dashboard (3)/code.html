@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Inventory Management - FoodHub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#F26522", // FoodHub Orange
+              "background-light": "#F8FAFC",
+              "background-dark": "#0F172A",
+              "card-light": "#FFFFFF",
+              "card-dark": "#1E293B",
+              "border-light": "#E2E8F0",
+              "border-dark": "#334155",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-item { @apply flex items-center px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer; }
+        .sidebar-item.active { @apply bg-orange-50 dark:bg-orange-900/20 text-primary font-medium; }
+        .low-stock-row { @apply bg-red-50/50 dark:bg-red-900/10; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark hidden md:flex flex-col">
+<div class="p-6">
+<h1 class="text-2xl font-bold text-primary">FoodHub</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">grid_view</span>
+                    Dashboard
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">storefront</span>
+                    Outlet Management
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">group</span>
+                    User Management
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">account_balance</span>
+                    Investor Management
+                </div>
+<div class="sidebar-item active">
+<span class="material-icons-outlined mr-3">inventory_2</span>
+                    Inventory Management
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">shopping_bag</span>
+                    Order Management
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">restaurant</span>
+                    Cloud Kitchen
+                </div>
+<div class="sidebar-item flex justify-between">
+<div class="flex items-center">
+<span class="material-icons-outlined mr-3">notifications</span>
+                        Notifications
+                    </div>
+<span class="bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full">3</span>
+</div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">location_on</span>
+                    Location &amp; Delivery
+                </div>
+<div class="sidebar-item">
+<span class="material-icons-outlined mr-3">analytics</span>
+                    Reports &amp; Settings
+                </div>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<button class="w-full flex items-center justify-center p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined text-slate-600 dark:text-slate-400">dark_mode</span>
+<span class="ml-2 text-sm font-medium">Toggle Dark Mode</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto">
+<header class="p-6 md:px-8 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-card-light dark:bg-card-dark sticky top-0 z-10">
+<h2 class="text-2xl font-bold text-slate-800 dark:text-white">Inventory Management</h2>
+<div class="flex gap-3">
+<button class="flex items-center px-4 py-2 border border-primary text-primary font-medium rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors">
+<span class="material-icons-outlined mr-2 text-xl">swap_horiz</span>
+                        Transfer Stock
+                    </button>
+<button class="flex items-center px-4 py-2 bg-primary text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+<span class="material-icons-outlined mr-2 text-xl">add</span>
+                        Add Stock
+                    </button>
+</div>
+</header>
+<div class="p-6 md:p-8 space-y-6">
+<div class="flex flex-wrap gap-4 items-center">
+<div class="relative min-w-[180px]">
+<select class="w-full appearance-none bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-700 dark:text-slate-300">
+<option>All Outlets</option>
+<option>Main Branch</option>
+<option>Downtown Branch</option>
+</select>
+<span class="material-icons-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+<div class="relative flex-1 min-w-[250px]">
+<span class="material-icons-outlined absolute left-3 top-2.5 text-slate-400">search</span>
+<input class="w-full bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-700 dark:text-slate-300" placeholder="Search items or SKU..." type="text"/>
+</div>
+<div class="relative min-w-[180px]">
+<select class="w-full appearance-none bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-700 dark:text-slate-300">
+<option>All Categories</option>
+<option>Vegetables</option>
+<option>Meat</option>
+<option>Oils</option>
+<option>Grains</option>
+</select>
+<span class="material-icons-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm font-medium">
+<th class="px-6 py-4">Item Name</th>
+<th class="px-6 py-4">SKU/Code</th>
+<th class="px-6 py-4">Unit</th>
+<th class="px-6 py-4">Quantity</th>
+<th class="px-6 py-4">Threshold</th>
+<th class="px-6 py-4">Branch</th>
+<th class="px-6 py-4">Last Updated</th>
+<th class="px-6 py-4 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-slate-700 dark:text-slate-300">
+<tr class="border-t border-border-light dark:border-border-dark">
+<td class="px-6 py-4 font-medium">Fresh Tomatoes</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">ING001</td>
+<td class="px-6 py-4">Kg</td>
+<td class="px-6 py-4">45</td>
+<td class="px-6 py-4">50</td>
+<td class="px-6 py-4">Main Branch</td>
+<td class="px-6 py-4 text-sm">2024-01-20 14:30</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-icons-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="low-stock-row border-t border-border-light dark:border-border-dark">
+<td class="px-6 py-4 font-medium">Chicken Breast</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">ING002</td>
+<td class="px-6 py-4">Kg</td>
+<td class="px-6 py-4 text-red-600 font-semibold">15</td>
+<td class="px-6 py-4">20</td>
+<td class="px-6 py-4">Downtown Branch</td>
+<td class="px-6 py-4 text-sm">2024-01-20 12:15</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-icons-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="border-t border-border-light dark:border-border-dark">
+<td class="px-6 py-4 font-medium">Cooking Oil</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">ING003</td>
+<td class="px-6 py-4">L</td>
+<td class="px-6 py-4 text-green-600 font-semibold">80</td>
+<td class="px-6 py-4">30</td>
+<td class="px-6 py-4">Main Branch</td>
+<td class="px-6 py-4 text-sm">2024-01-19 16:45</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-icons-outlined">more_vert</span></button>
+</td>
+</tr>
+<tr class="low-stock-row border-t border-border-light dark:border-border-dark">
+<td class="px-6 py-4 font-medium">Rice</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">ING004</td>
+<td class="px-6 py-4">Kg</td>
+<td class="px-6 py-4 text-red-600 font-semibold">15</td>
+<td class="px-6 py-4">25</td>
+<td class="px-6 py-4">Downtown Branch</td>
+<td class="px-6 py-4 text-sm">2024-01-19 09:20</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-icons-outlined">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+<div class="border-b border-border-light dark:border-border-dark flex px-6 overflow-x-auto whitespace-nowrap">
+<button class="py-4 px-4 text-primary font-semibold border-b-2 border-primary">Current Stock</button>
+<button class="py-4 px-4 text-slate-500 dark:text-slate-400 font-medium hover:text-slate-700 dark:hover:text-slate-200 transition-colors">Stock Movement</button>
+<button class="py-4 px-4 text-slate-500 dark:text-slate-400 font-medium hover:text-slate-700 dark:hover:text-slate-200 transition-colors">Transfers</button>
+</div>
+<div class="p-6 space-y-6">
+<div class="flex items-center text-slate-500 dark:text-slate-400 font-medium text-sm">
+<span class="material-icons-outlined text-sm mr-2">history</span>
+                            Last 7 days activity
+                        </div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="w-3 h-3 rounded-full bg-green-500 mt-1.5"></div>
+<div class="w-px flex-1 bg-border-light dark:bg-border-dark my-1"></div>
+</div>
+<div class="flex-1 pb-4">
+<div class="flex justify-between">
+<div>
+<p class="font-semibold text-slate-800 dark:text-slate-100">Fresh Tomatoes</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Main Branch</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-green-600">+20</p>
+<p class="text-[12px] text-slate-400">2024-01-20 14:30</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="w-3 h-3 rounded-full bg-red-500 mt-1.5"></div>
+<div class="w-px flex-1 bg-border-light dark:bg-border-dark my-1"></div>
+</div>
+<div class="flex-1 pb-4">
+<div class="flex justify-between">
+<div>
+<p class="font-semibold text-slate-800 dark:text-slate-100">Chicken Breast</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Downtown Branch</p>
+</div>
+<div class="text-right">
+<p class="font-bold text-red-600">-5</p>
+<p class="text-[12px] text-slate-400">2024-01-20 12:15</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="w-3 h-3 rounded-full bg-blue-500 mt-1.5"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<div>
+<p class="font-semibold text-slate-800 dark:text-slate-100">Cooking Oil</p>
+<p class="text-sm text-slate-500 dark:text-slate-400 flex items-center">
+                                                Main Branch 
+                                                <span class="material-icons-outlined text-sm mx-1">arrow_forward</span> 
+                                                Downtown
+                                            </p>
+</div>
+<div class="text-right">
+<p class="font-bold text-blue-600">10</p>
+<p class="text-[12px] text-slate-400">2024-01-19 16:45</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>
