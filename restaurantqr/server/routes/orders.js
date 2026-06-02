@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { v4 as uuidv4 } from 'uuid';
 import authenticate from '../middleware/auth.js';
+import { broadcastNotification } from './notifications.js';
 
 const router = express.Router();
 
@@ -52,7 +53,11 @@ const createNotifications = async ({ users, title, message, type, relatedId, rel
     relatedId,
     relatedModel,
   }));
-  await Notification.insertMany(docs);
+  const saved = await Notification.insertMany(docs);
+  // Broadcast each notification to the respective user via SSE
+  saved.forEach((notification) => {
+    broadcastNotification(notification.user, notification);
+  });
 };
 
 // Get active delivery staff (for assignment dropdown - Vendor/Admin/Company Admin)
@@ -335,7 +340,7 @@ router.patch('/:id/assign', authenticate, async (req, res) => {
     broadcastOrderUpdate(populatedOrder);
 
     // Notify assigned delivery staff
-    await Notification.create({
+    const assignNotification = await Notification.create({
       user: assignedTo,
       title: 'New Delivery Assignment',
       message: `You have been assigned to deliver order ${order.orderId}.`,
@@ -343,6 +348,7 @@ router.patch('/:id/assign', authenticate, async (req, res) => {
       relatedId: order._id,
       relatedModel: 'Order',
     });
+    broadcastNotification(assignedTo, assignNotification);
 
     res.json(populatedOrder);
   } catch (error) {

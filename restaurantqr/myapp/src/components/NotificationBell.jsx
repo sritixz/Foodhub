@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -8,17 +8,18 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
-    
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 30000);
+    setupSSE();
 
-    return () => clearInterval(interval);
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -31,6 +32,42 @@ const NotificationBell = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const setupSSE = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+    try {
+      // SSE doesn't support custom headers, so we pass token as query param
+      const eventSource = new EventSource(`${API_URL}/notifications/stream?token=${token}`);
+      eventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new_notification') {
+            // Prepend new notification to the list
+            setNotifications(prev => [data.notification, ...prev].slice(0, 10));
+            setUnreadCount(prev => prev + 1);
+          }
+        } catch (err) {
+          console.error('Error parsing notification SSE:', err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+        eventSourceRef.current = null;
+        // Fallback to polling if SSE fails
+        const interval = setInterval(fetchUnreadCount, 30000);
+        return () => clearInterval(interval);
+      };
+    } catch (err) {
+      console.error('Notification SSE setup failed:', err);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -53,7 +90,7 @@ const NotificationBell = () => {
   const handleMarkAsRead = async (id) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications(notifications.map(n => 
+      setNotifications(notifications.map(n =>
         n._id === id ? { ...n, read: true } : n
       ));
       setUnreadCount(Math.max(0, unreadCount - 1));
@@ -79,6 +116,8 @@ const NotificationBell = () => {
 
     if (notification.relatedId && notification.type === 'order') {
       navigate(`/orders/track/${notification.relatedId}`);
+    } else if (notification.relatedId && notification.type === 'delivery') {
+      navigate(`/orders/track/${notification.relatedId}`);
     }
 
     setIsOpen(false);
@@ -99,6 +138,21 @@ const NotificationBell = () => {
     }
   };
 
+  const getTimeAgo = (dateStr) => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -113,7 +167,7 @@ const NotificationBell = () => {
       >
         <span className="material-icons-outlined">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -123,14 +177,16 @@ const NotificationBell = () => {
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <h3 className="font-bold">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="text-sm text-primary hover:underline"
-              >
-                Mark all as read
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-y-auto custom-scrollbar flex-1">
@@ -150,7 +206,7 @@ const NotificationBell = () => {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className={`material-icons-outlined ${
+                      <span className={`material-icons-outlined text-lg ${
                         !notification.read ? 'text-primary' : 'text-slate-400'
                       }`}>
                         {getNotificationIcon(notification.type)}
@@ -164,8 +220,8 @@ const NotificationBell = () => {
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-slate-400 mt-2">
-                          {new Date(notification.createdAt).toLocaleString()}
+                        <p className="text-xs text-slate-400 mt-1">
+                          {getTimeAgo(notification.createdAt)}
                         </p>
                       </div>
                       {!notification.read && (
@@ -176,6 +232,19 @@ const NotificationBell = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* View All link */}
+          <div className="p-3 border-t border-slate-200 dark:border-slate-800 text-center">
+            <button
+              onClick={() => {
+                navigate('/notifications');
+                setIsOpen(false);
+              }}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              View All Notifications
+            </button>
           </div>
         </div>
       )}

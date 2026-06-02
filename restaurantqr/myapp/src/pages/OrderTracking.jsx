@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout/Layout';
 import Card from '../components/UI/Card';
+import Button from '../components/UI/Button';
+import Modal from '../components/UI/Modal';
+import api from '../utils/api';
 
 // Standalone public API — no auth interceptors
 const publicApi = axios.create({
@@ -15,6 +18,9 @@ const OrderTracking = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
 
   useEffect(() => {
     fetchOrder();
@@ -62,6 +68,22 @@ const OrderTracking = () => {
     };
   };
 
+  const canCancel = order && !['Delivered', 'Cancelled'].includes(order.status);
+
+  const handleCancelOrder = async () => {
+    setCancelling(true);
+    setCancelError('');
+    try {
+      const response = await api.patch(`/orders/${id}/cancel`);
+      setOrder(response.data);
+      setShowCancelModal(false);
+    } catch (error) {
+      setCancelError(error.response?.data?.message || 'Failed to cancel order. You may need to log in.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'New':
@@ -84,6 +106,20 @@ const OrderTracking = () => {
   };
 
   const getStatusSteps = () => {
+    // If cancelled, show a different timeline
+    if (order?.status === 'Cancelled') {
+      const steps = [
+        { label: 'Order Placed', status: 'New' },
+        { label: 'Cancelled', status: 'Cancelled' },
+      ];
+      return steps.map((step, index) => ({
+        ...step,
+        completed: true,
+        current: index === steps.length - 1,
+        isCancelled: step.status === 'Cancelled',
+      }));
+    }
+
     const steps = [
       { label: 'Order Placed', status: 'New' },
       { label: 'Preparing', status: 'Preparing' },
@@ -98,6 +134,7 @@ const OrderTracking = () => {
       ...step,
       completed: index <= currentIndex,
       current: index === currentIndex,
+      isCancelled: false,
     }));
   };
 
@@ -147,10 +184,20 @@ const OrderTracking = () => {
         {/* Order Status */}
         <Card>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Order Status</h2>
-            <span className={`px-4 py-2 rounded-lg font-medium ${getStatusColor(order.status)}`}>
-              {order.status}
-            </span>
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-bold">Order Status</h2>
+              <span className={`px-4 py-2 rounded-lg font-medium ${getStatusColor(order.status)}`}>
+                {order.status}
+              </span>
+            </div>
+            {canCancel && (
+              <Button
+                onClick={() => setShowCancelModal(true)}
+                className="!bg-red-50 !text-red-600 hover:!bg-red-100 dark:!bg-red-900/20 dark:!text-red-400 dark:hover:!bg-red-900/40"
+              >
+                Cancel Order
+              </Button>
+            )}
           </div>
 
           {/* Status Timeline */}
@@ -158,33 +205,49 @@ const OrderTracking = () => {
             {statusSteps.map((step, index) => (
               <div key={step.status} className="flex items-start gap-4 mb-6 last:mb-0">
                 <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${step.completed
-                      ? 'bg-primary border-primary text-white'
-                      : step.current
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                    step.isCancelled
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : step.completed
+                        ? 'bg-primary border-primary text-white'
+                        : step.current
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400'
                     }`}>
-                    {step.completed ? (
+                    {step.isCancelled ? (
+                      <span className="material-icons-outlined text-sm">close</span>
+                    ) : step.completed ? (
                       <span className="material-icons-outlined text-sm">check</span>
                     ) : (
                       <span className="text-sm font-bold">{index + 1}</span>
                     )}
                   </div>
                   {index < statusSteps.length - 1 && (
-                    <div className={`w-0.5 h-12 ${step.completed ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
+                    <div className={`w-0.5 h-12 ${
+                      step.isCancelled
+                        ? 'bg-red-300 dark:bg-red-700'
+                        : step.completed ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
                       }`} />
                   )}
                 </div>
                 <div className="flex-1 pb-6">
-                  <h3 className={`font-medium ${step.completed || step.current
-                      ? 'text-slate-900 dark:text-white'
-                      : 'text-slate-400'
+                  <h3 className={`font-medium ${
+                    step.isCancelled
+                      ? 'text-red-600 dark:text-red-400'
+                      : step.completed || step.current
+                        ? 'text-slate-900 dark:text-white'
+                        : 'text-slate-400'
                     }`}>
                     {step.label}
                   </h3>
-                  {step.current && (
+                  {step.current && !step.isCancelled && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                       Order is currently at this stage
+                    </p>
+                  )}
+                  {step.isCancelled && (
+                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
+                      This order has been cancelled
                     </p>
                   )}
                 </div>
@@ -267,6 +330,41 @@ const OrderTracking = () => {
             </div>
           </Card>
         </div>
+
+        {/* Cancel Order Modal */}
+        <Modal isOpen={showCancelModal} onClose={() => setShowCancelModal(false)} title="Cancel Order" size="sm">
+          <div className="space-y-4">
+            <p className="text-slate-600 dark:text-slate-400">
+              Are you sure you want to cancel order <span className="font-bold">{order.orderId || order._id}</span>?
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              This action cannot be undone. If your order is already being prepared, the restaurant may still have started working on it.
+            </p>
+
+            {cancelError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-red-700 dark:text-red-400 text-sm">{cancelError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 !bg-slate-100 !text-slate-700 hover:!bg-slate-200 dark:!bg-slate-800 dark:!text-slate-300"
+                disabled={cancelling}
+              >
+                Keep Order
+              </Button>
+              <Button
+                onClick={handleCancelOrder}
+                className="flex-1 !bg-red-600 hover:!bg-red-700 !text-white"
+                disabled={cancelling}
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </Layout>
   );

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import MenuItem from '../models/MenuItem.js';
 import Category from '../models/Category.js';
 import authenticate from '../middleware/auth.js';
-import { vendorOnly, companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
@@ -116,12 +116,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create menu item (protected - Vendor/Admin)
-router.post('/', authenticate, validateCategory, async (req, res) => {
-  // Allow Vendor, Admin, or Company Admin
-  if (!['Vendor', 'Admin', 'Company Admin'].includes(req.user.role)) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
+// Create menu item (protected - Vendor/Admin/Company Admin)
+router.post('/', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), validateCategory, async (req, res) => {
   try {
     const menuItem = new MenuItem(req.body);
     const savedMenuItem = await menuItem.save();
@@ -131,12 +127,8 @@ router.post('/', authenticate, validateCategory, async (req, res) => {
   }
 });
 
-// Update menu item (protected)
-router.put('/:id', authenticate, validateCategory, async (req, res) => {
-  // Allow Vendor, Admin, or Company Admin
-  if (!['Vendor', 'Admin', 'Company Admin'].includes(req.user.role)) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
+// Update menu item (protected - Vendor/Admin/Company Admin)
+router.put('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), validateCategory, async (req, res) => {
   try {
     const menuItem = await MenuItem.findByIdAndUpdate(
       req.params.id,
@@ -152,12 +144,8 @@ router.put('/:id', authenticate, validateCategory, async (req, res) => {
   }
 });
 
-// Delete menu item (protected)
-router.delete('/:id', authenticate, async (req, res) => {
-  // Allow Vendor, Admin, or Company Admin
-  if (!['Vendor', 'Admin', 'Company Admin'].includes(req.user.role)) {
-    return res.status(403).json({ message: 'Access denied' });
-  }
+// Delete menu item (protected - Vendor/Admin/Company Admin)
+router.delete('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
   try {
     const menuItem = await MenuItem.findByIdAndDelete(req.params.id);
     if (!menuItem) {

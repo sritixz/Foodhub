@@ -1,7 +1,7 @@
 import express from 'express';
 import Location from '../models/Location.js';
 import authenticate from '../middleware/auth.js';
-import { companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Create location (Admin/Company Admin)
-router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const location = new Location(req.body);
     const savedLocation = await location.save();
@@ -27,7 +27,7 @@ router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Update location (Admin/Company Admin)
-router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const location = await Location.findByIdAndUpdate(
       req.params.id,
@@ -44,10 +44,7 @@ router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Delete location (Admin only)
-router.delete('/:id', authenticate, async (req, res) => {
-  if (req.user.role !== 'Admin') {
-    return res.status(403).json({ message: 'Only Admin can delete locations' });
-  }
+router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const location = await Location.findByIdAndDelete(req.params.id);
     if (!location) {

@@ -29,7 +29,13 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/qr/scan" element={<QRScan />} />
+        <Route path="/qr/menu" element={<QRMenu />} />
+        <Route path="/orders/track/:id" element={<OrderTracking />} />
+
+        {/* Dashboard - all authenticated users */}
         <Route
           path="/"
           element={
@@ -38,10 +44,12 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Outlet Management */}
         <Route
           path="/outlets"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <OutletManagement />
             </ProtectedRoute>
           }
@@ -70,14 +78,18 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Inventory - Admin/Company Admin/Vendor */}
         <Route
           path="/inventory"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <InventoryManagement />
             </ProtectedRoute>
           }
         />
+
+        {/* Menu Management */}
         <Route
           path="/menu/add"
           element={
@@ -89,7 +101,7 @@ const App = () => {
         <Route
           path="/menu/browse"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Staff', 'Employee']}>
               <MenuBrowse />
             </ProtectedRoute>
           }
@@ -102,10 +114,12 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Order Management - Admin/Company Admin/Vendor/Staff */}
         <Route
           path="/orders"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Staff']}>
               <OrderManagement />
             </ProtectedRoute>
           }
@@ -113,11 +127,13 @@ const App = () => {
         <Route
           path="/orders/place"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Employee', 'Staff']}>
               <OrderPlacement />
             </ProtectedRoute>
           }
         />
+
+        {/* Delivery */}
         <Route
           path="/delivery"
           element={
@@ -129,19 +145,23 @@ const App = () => {
         <Route
           path="/location-delivery"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Delivery Staff']}>
               <LocationDelivery />
             </ProtectedRoute>
           }
         />
+
+        {/* Warehouse - Admin/Company Admin/Vendor */}
         <Route
           path="/warehouse"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <WarehouseManagement />
             </ProtectedRoute>
           }
         />
+
+        {/* Notifications - all authenticated users */}
         <Route
           path="/notifications"
           element={
@@ -150,14 +170,18 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Reports - Admin/Company Admin/Vendor */}
         <Route
           path="/reports"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <Reports />
             </ProtectedRoute>
           }
         />
+
+        {/* User Management - Admin/Company Admin */}
         <Route
           path="/users"
           element={
@@ -166,6 +190,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Vendor Dashboard */}
         <Route
           path="/vendors"
           element={
@@ -174,6 +200,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Profile - all authenticated users */}
         <Route
           path="/profile"
           element={
@@ -182,6 +210,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Category Management - Admin only */}
         <Route
           path="/categories"
           element={
@@ -190,9 +220,8 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/qr/scan" element={<QRScan />} />
-        <Route path="/qr/menu" element={<QRMenu />} />
-        <Route path="/orders/track/:id" element={<OrderTracking />} />
+
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

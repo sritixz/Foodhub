@@ -1,12 +1,12 @@
 import express from 'express';
 import Warehouse from '../models/Warehouse.js';
 import authenticate from '../middleware/auth.js';
-import { companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
-// Get all warehouses
-router.get('/', authenticate, async (req, res) => {
+// Get all warehouses (Admin/Company Admin/Vendor)
+router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
   try {
     const warehouses = await Warehouse.find()
       .populate('linkedOutlets', 'name outletId')
@@ -18,7 +18,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Create warehouse (Admin/Company Admin)
-router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const warehouse = new Warehouse(req.body);
     const savedWarehouse = await warehouse.save();
@@ -29,7 +29,7 @@ router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Update warehouse (Admin/Company Admin)
-router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const warehouse = await Warehouse.findByIdAndUpdate(
       req.params.id,
@@ -46,12 +46,8 @@ router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Update warehouse inventory (Vendor/Admin/Company Admin)
-router.put('/:id/inventory', authenticate, async (req, res) => {
+router.put('/:id/inventory', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
   try {
-    if (!['Vendor', 'Admin', 'Company Admin'].includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     const warehouse = await Warehouse.findByIdAndUpdate(
       req.params.id,
       { inventoryItems: req.body.inventoryItems || [] },
@@ -68,10 +64,7 @@ router.put('/:id/inventory', authenticate, async (req, res) => {
 });
 
 // Delete warehouse (Admin only)
-router.delete('/:id', authenticate, async (req, res) => {
-  if (req.user.role !== 'Admin') {
-    return res.status(403).json({ message: 'Only Admin can delete warehouses' });
-  }
+router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const warehouse = await Warehouse.findByIdAndDelete(req.params.id);
     if (!warehouse) {

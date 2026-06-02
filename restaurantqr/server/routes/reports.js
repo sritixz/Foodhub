@@ -2,6 +2,7 @@ import express from 'express';
 import Order from '../models/Order.js';
 import MenuItem from '../models/MenuItem.js';
 import authenticate from '../middleware/auth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ const getMatchByRole = (user) => {
   return {};
 };
 
-router.get('/summary', authenticate, async (req, res) => {
+router.get('/summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
   try {
     const match = getMatchByRole(req.user);
 

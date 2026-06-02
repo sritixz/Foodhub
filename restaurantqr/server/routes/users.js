@@ -2,7 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import authenticate from '../middleware/auth.js';
-import { companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 const COMPANY_ADMIN_ALLOWED_ROLES = ['Employee', 'Staff', 'Delivery Staff'];
@@ -44,7 +44,7 @@ const ensureCompanyAdminAccess = (targetUser, currentUser) => {
 };
 
 // Get all users (protected - Admin/Company Admin)
-router.get('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.get('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const { role, status, outlet } = req.query;
     let query = {};
@@ -93,7 +93,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create user (protected - Admin/Company Admin)
-router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const { password, ...userData } = req.body;
 
@@ -182,7 +182,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Delete user (protected - Admin/Company Admin)
-router.delete('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.delete('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     if (req.user.role === 'Company Admin') {
       const targetUser = await User.findById(req.params.id);

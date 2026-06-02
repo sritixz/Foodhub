@@ -213,6 +213,12 @@ const MenuBrowse = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 line-clamp-2">
                   {item.description || 'No description'}
                 </p>
+                {item.vendor?.name && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 mb-2">
+                    <span className="material-icons-outlined text-[14px]">storefront</span>
+                    {item.vendor.name}
+                  </p>
+                )}
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-lg font-bold text-primary">₹{item.basePrice || '0.00'}</span>
                   <div className="flex gap-2">

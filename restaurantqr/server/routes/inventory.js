@@ -1,20 +1,25 @@
 import express from 'express';
 import Inventory from '../models/Inventory.js';
 import authenticate from '../middleware/auth.js';
-import { companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
-// Get all inventory items (protected)
-router.get('/', authenticate, async (req, res) => {
+// Get all inventory items (protected - Admin/Company Admin/Vendor)
+router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
   try {
     const { branch, category, lowStock } = req.query;
     const query = {};
 
-    if (branch) query.branch = branch;
+    // Vendors can only see their own outlet's inventory
+    if (req.user.role === 'Vendor' && req.user.outlet) {
+      query.branch = req.user.outlet;
+    } else {
+      if (branch) query.branch = branch;
+    }
+
     if (category) query.category = category;
     if (lowStock === 'true') {
-      // Find items where quantity is less than threshold
       const items = await Inventory.find(query).populate('branch', 'name outletId');
       const lowStockItems = items.filter(item => item.quantity < item.threshold);
       return res.json(lowStockItems);
@@ -29,8 +34,8 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// Get single inventory item (protected)
-router.get('/:id', authenticate, async (req, res) => {
+// Get single inventory item (protected - Admin/Company Admin/Vendor)
+router.get('/:id', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
   try {
     const item = await Inventory.findById(req.params.id).populate('branch', 'name outletId');
     if (!item) {
@@ -42,8 +47,8 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Create inventory item (protected)
-router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+// Create inventory item (protected - Admin/Company Admin)
+router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const inventory = new Inventory(req.body);
     const savedInventory = await inventory.save();
@@ -54,8 +59,8 @@ router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
   }
 });
 
-// Update inventory item (protected)
-router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+// Update inventory item (protected - Admin/Company Admin)
+router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const inventory = await Inventory.findByIdAndUpdate(
       req.params.id,
@@ -71,8 +76,8 @@ router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
   }
 });
 
-// Update inventory quantity (protected)
-router.patch('/:id/quantity', authenticate, companyAdminOrAdmin, async (req, res) => {
+// Update inventory quantity (protected - Admin/Company Admin)
+router.patch('/:id/quantity', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const { quantity, operation } = req.body; // operation: 'add' or 'subtract'
     const item = await Inventory.findById(req.params.id);
@@ -99,8 +104,8 @@ router.patch('/:id/quantity', authenticate, companyAdminOrAdmin, async (req, res
   }
 });
 
-// Transfer stock between outlets (protected)
-router.post('/transfer', authenticate, companyAdminOrAdmin, async (req, res) => {
+// Transfer stock between outlets (protected - Admin/Company Admin)
+router.post('/transfer', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const { itemId, fromBranch, toBranch, quantity } = req.body;
 
@@ -139,8 +144,8 @@ router.post('/transfer', authenticate, companyAdminOrAdmin, async (req, res) => 
   }
 });
 
-// Delete inventory item (protected)
-router.delete('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+// Delete inventory item (protected - Admin/Company Admin)
+router.delete('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const inventory = await Inventory.findByIdAndDelete(req.params.id);
     if (!inventory) {

@@ -4,7 +4,7 @@ import QRCode from '../models/QRCode.js';
 import { v4 as uuidv4 } from 'uuid';
 import QRCodeLib from 'qrcode';
 import authenticate from '../middleware/auth.js';
-import { companyAdminOrAdmin } from '../middleware/roleAuth.js';
+import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create outlet (protected - Admin/Company Admin only)
-router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const outletData = req.body;
 
@@ -66,7 +66,7 @@ router.post('/', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Update outlet (protected)
-router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
     const outlet = await Outlet.findByIdAndUpdate(
       req.params.id,
@@ -83,11 +83,7 @@ router.put('/:id', authenticate, companyAdminOrAdmin, async (req, res) => {
 });
 
 // Delete outlet (protected - Admin only)
-router.delete('/:id', authenticate, async (req, res) => {
-  // Check if user is Admin
-  if (req.user.role !== 'Admin') {
-    return res.status(403).json({ message: 'Only Admin can delete outlets' });
-  }
+router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
   try {
     const outlet = await Outlet.findByIdAndDelete(req.params.id);
     if (!outlet) {
@@ -100,7 +96,7 @@ router.delete('/:id', authenticate, async (req, res) => {
 });
 
 // Generate QR code for outlet (protected)
-router.post('/:id/qrcode', authenticate, companyAdminOrAdmin, async (req, res) => {
+router.post('/:id/qrcode', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
   try {
     const outlet = await Outlet.findById(req.params.id);
     if (!outlet) {
