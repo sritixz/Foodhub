@@ -4,15 +4,27 @@ const warehouseItemSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
+  },
+  sku: {
+    type: String,
+    trim: true,
+    default: null,
   },
   quantity: {
     type: Number,
     required: true,
     min: 0,
+    default: 0,
   },
   unit: {
     type: String,
     default: 'pcs',
+  },
+  threshold: {
+    type: Number,
+    default: 10,
+    min: 0,
   },
 });
 
@@ -21,6 +33,7 @@ const warehouseSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     address: {
       type: String,
@@ -37,6 +50,14 @@ const warehouseSchema = new mongoose.Schema(
     zone: {
       type: String,
       required: true,
+    },
+    contactName: {
+      type: String,
+      default: null,
+    },
+    contactPhone: {
+      type: String,
+      default: null,
     },
     linkedOutlets: [
       {
