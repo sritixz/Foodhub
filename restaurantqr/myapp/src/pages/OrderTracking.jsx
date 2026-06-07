@@ -21,6 +21,13 @@ const OrderTracking = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  const [now, setNow] = useState(Date.now());
+
+  // Tick every second for countdown
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetchOrder();
@@ -170,6 +177,25 @@ const OrderTracking = () => {
   const total = order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
   const statusSteps = getStatusSteps();
 
+  // Countdown helper
+  const getCountdown = () => {
+    if (!order.estimatedReadyTime) return null;
+    const diffMs = new Date(order.estimatedReadyTime) - now;
+    if (diffMs <= 0) return 'Any moment now';
+    const totalSecs = Math.floor(diffMs / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+  };
+  const countdown = getCountdown();
+  const isCountdownActive = order.estimatedReadyTime && new Date(order.estimatedReadyTime) > now;
+
+  // Build a merged timeline: statusSteps (visual) annotated with actual timeline entries
+  const timelineMap = {};
+  (order.statusTimeline || []).forEach((entry) => {
+    timelineMap[entry.status] = entry;
+  });
+
   return (
     <Layout
       headerProps={{
@@ -200,59 +226,98 @@ const OrderTracking = () => {
             )}
           </div>
 
+          {/* Live countdown banner */}
+          {order.estimatedReadyTime && !['Delivered', 'Cancelled'].includes(order.status) && (
+            <div className={`mb-6 flex items-center gap-3 px-4 py-3 rounded-xl border ${
+              isCountdownActive
+                ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+            }`}>
+              <span className={`material-icons-outlined text-2xl ${isCountdownActive ? 'text-orange-500' : 'text-green-500'}`}>
+                {isCountdownActive ? 'timer' : 'check_circle'}
+              </span>
+              <div>
+                <p className={`text-sm font-semibold ${isCountdownActive ? 'text-orange-700 dark:text-orange-400' : 'text-green-700 dark:text-green-400'}`}>
+                  {isCountdownActive ? 'Estimated time remaining' : 'Should be ready'}
+                </p>
+                <p className={`text-2xl font-black tabular-nums ${isCountdownActive ? 'text-orange-600 dark:text-orange-300' : 'text-green-600 dark:text-green-300'}`}>
+                  {countdown}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Status Timeline */}
           <div className="relative">
-            {statusSteps.map((step, index) => (
-              <div key={step.status} className="flex items-start gap-4 mb-6 last:mb-0">
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                    step.isCancelled
-                      ? 'bg-red-500 border-red-500 text-white'
-                      : step.completed
-                        ? 'bg-primary border-primary text-white'
-                        : step.current
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400'
-                    }`}>
-                    {step.isCancelled ? (
-                      <span className="material-icons-outlined text-sm">close</span>
-                    ) : step.completed ? (
-                      <span className="material-icons-outlined text-sm">check</span>
-                    ) : (
-                      <span className="text-sm font-bold">{index + 1}</span>
+            {statusSteps.map((step, index) => {
+              const timelineEntry = timelineMap[step.status];
+              return (
+                <div key={step.status} className="flex items-start gap-4 mb-6 last:mb-0">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                      step.isCancelled
+                        ? 'bg-red-500 border-red-500 text-white'
+                        : step.completed
+                          ? 'bg-primary border-primary text-white'
+                          : step.current
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}>
+                      {step.isCancelled ? (
+                        <span className="material-icons-outlined text-sm">close</span>
+                      ) : step.completed ? (
+                        <span className="material-icons-outlined text-sm">check</span>
+                      ) : (
+                        <span className="text-sm font-bold">{index + 1}</span>
+                      )}
+                    </div>
+                    {index < statusSteps.length - 1 && (
+                      <div className={`w-0.5 h-12 ${
+                        step.isCancelled
+                          ? 'bg-red-300 dark:bg-red-700'
+                          : step.completed ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
+                        }`} />
                     )}
                   </div>
-                  {index < statusSteps.length - 1 && (
-                    <div className={`w-0.5 h-12 ${
-                      step.isCancelled
-                        ? 'bg-red-300 dark:bg-red-700'
-                        : step.completed ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
-                      }`} />
-                  )}
+                  <div className="flex-1 pb-6">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h3 className={`font-medium ${
+                        step.isCancelled
+                          ? 'text-red-600 dark:text-red-400'
+                          : step.completed || step.current
+                            ? 'text-slate-900 dark:text-white'
+                            : 'text-slate-400'
+                        }`}>
+                        {step.label}
+                      </h3>
+                      {timelineEntry && (
+                        <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+                          {new Date(timelineEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {' · '}
+                          {new Date(timelineEntry.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                    {timelineEntry?.note && (
+                      <p className="text-sm text-primary font-medium mt-0.5 flex items-center gap-1">
+                        <span className="material-icons-outlined text-[14px]">schedule</span>
+                        {timelineEntry.note}
+                      </p>
+                    )}
+                    {step.current && !step.isCancelled && !timelineEntry?.note && (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Order is currently at this stage
+                      </p>
+                    )}
+                    {step.isCancelled && (
+                      <p className="text-sm text-red-500 dark:text-red-400 mt-1">
+                        This order has been cancelled
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 pb-6">
-                  <h3 className={`font-medium ${
-                    step.isCancelled
-                      ? 'text-red-600 dark:text-red-400'
-                      : step.completed || step.current
-                        ? 'text-slate-900 dark:text-white'
-                        : 'text-slate-400'
-                    }`}>
-                    {step.label}
-                  </h3>
-                  {step.current && !step.isCancelled && (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      Order is currently at this stage
-                    </p>
-                  )}
-                  {step.isCancelled && (
-                    <p className="text-sm text-red-500 dark:text-red-400 mt-1">
-                      This order has been cancelled
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 

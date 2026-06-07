@@ -25,6 +25,7 @@ import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import CategoryManagement from './pages/CategoryManagement';
 import BudgetConfig from './pages/BudgetConfig';
+import PaymentModule from './pages/PaymentModule';
 
 const App = () => {
   return (
@@ -228,6 +229,16 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
               <BudgetConfig />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Payment Module - Employee / Company Admin / Admin */}
+        <Route
+          path="/payments"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Employee']}>
+              <PaymentModule />
             </ProtectedRoute>
           }
         />

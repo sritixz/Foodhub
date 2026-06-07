@@ -10,6 +10,8 @@ router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), asy
   try {
     const warehouses = await Warehouse.find()
       .populate('linkedOutlets', 'name outletId')
+      .populate('linkedKitchen', 'name city isCentralKitchen')
+      .populate('syncLog.syncedBy', 'name role')
       .sort({ createdAt: -1 });
     res.json(warehouses);
   } catch (error) {
@@ -140,6 +142,69 @@ router.patch('/:id/inventory/:itemId/adjust', authenticate, authorize('Vendor', 
 
     await warehouse.save();
     const populated = await Warehouse.findById(warehouse._id).populate('linkedOutlets', 'name outletId');
+    res.json(populated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Toggle central kitchen flag (Admin/Company Admin)
+router.patch('/:id/toggle-kitchen', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+  try {
+    const warehouse = await Warehouse.findById(req.params.id);
+    if (!warehouse) return res.status(404).json({ message: 'Warehouse not found' });
+    warehouse.isCentralKitchen = !warehouse.isCentralKitchen;
+    await warehouse.save();
+    const populated = await Warehouse.findById(warehouse._id)
+      .populate('linkedOutlets', 'name outletId')
+      .populate('linkedKitchen', 'name city');
+    res.json(populated);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Link/unlink a warehouse to a central kitchen (Admin/Company Admin)
+router.patch('/:id/link-kitchen', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+  try {
+    const { kitchenId } = req.body; // null to unlink
+    const warehouse = await Warehouse.findByIdAndUpdate(
+      req.params.id,
+      { linkedKitchen: kitchenId || null },
+      { new: true }
+    )
+      .populate('linkedOutlets', 'name outletId')
+      .populate('linkedKitchen', 'name city isCentralKitchen');
+    if (!warehouse) return res.status(404).json({ message: 'Warehouse not found' });
+    res.json(warehouse);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Kitchen sync — vendor pushes current inventory count to sync log (Vendor/Admin/Company Admin)
+router.post('/:id/sync', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
+  try {
+    const { note } = req.body;
+    const warehouse = await Warehouse.findById(req.params.id);
+    if (!warehouse) return res.status(404).json({ message: 'Warehouse not found' });
+
+    const syncEntry = {
+      syncedBy: req.user._id,
+      syncedAt: new Date(),
+      note: note || null,
+      itemsSynced: warehouse.inventoryItems.length,
+    };
+    warehouse.syncLog.push(syncEntry);
+    // Keep only last 50 sync entries
+    if (warehouse.syncLog.length > 50) {
+      warehouse.syncLog = warehouse.syncLog.slice(-50);
+    }
+    await warehouse.save();
+    const populated = await Warehouse.findById(warehouse._id)
+      .populate('linkedOutlets', 'name outletId')
+      .populate('linkedKitchen', 'name city')
+      .populate('syncLog.syncedBy', 'name role');
     res.json(populated);
   } catch (error) {
     res.status(400).json({ message: error.message });

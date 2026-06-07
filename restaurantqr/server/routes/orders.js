@@ -238,8 +238,8 @@ router.patch('/:id/status', authenticate, async (req, res) => {
 
     const updateFields = { status };
 
-    // When moving to Preparing, optionally set estimated ready time
-    if (status === 'Preparing' && estimatedMinutes && Number(estimatedMinutes) > 0) {
+    // Set estimated ready/delivery time for any status transition that includes estimatedMinutes
+    if (estimatedMinutes && Number(estimatedMinutes) > 0) {
       updateFields.estimatedReadyTime = new Date(Date.now() + Number(estimatedMinutes) * 60 * 1000);
     }
 
@@ -247,7 +247,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     const timelineEntry = {
       status,
       timestamp: new Date(),
-      note: note || null,
+      note: note || (estimatedMinutes && Number(estimatedMinutes) > 0 ? `~${estimatedMinutes} min` : null),
       setBy: req.user._id,
     };
 

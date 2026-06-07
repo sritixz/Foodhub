@@ -20,8 +20,15 @@ const OrderManagement = () => {
   const [error, setError] = useState('');
 
   // Prep time modal
-  const [prepModal, setPrepModal] = useState({ open: false, orderId: null, isAccept: false });
+  const [prepModal, setPrepModal] = useState({ open: false, orderId: null, targetStatus: null });
   const [prepMinutes, setPrepMinutes] = useState('20');
+
+  const STATUS_ETA_CONFIG = {
+    Preparing: { label: 'Prep Time',      question: 'How long to prepare?',          icon: 'restaurant',       presets: ['10','15','20','30','45','60'] },
+    Ready:     { label: 'Pickup Time',    question: 'Ready for pickup in how long?',  icon: 'check_circle',     presets: ['5','10','15','20'] },
+    Picked:    { label: 'Transit Time',   question: 'Estimated delivery time?',       icon: 'delivery_dining',  presets: ['10','15','20','30','45'] },
+    'In Transit': { label: 'Delivery ETA', question: 'Minutes until delivered?',      icon: 'local_shipping',   presets: ['5','10','15','20','30'] },
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -140,9 +147,9 @@ const OrderManagement = () => {
   }, [orderType, timeFilter, selectedOutlet]);
 
   const handleStatusUpdate = async (orderId, status) => {
-    // For Preparing, show prep time modal first
-    if (status === 'Preparing') {
-      setPrepModal({ open: true, orderId, isAccept: false });
+    if (STATUS_ETA_CONFIG[status]) {
+      setPrepModal({ open: true, orderId, targetStatus: status });
+      setPrepMinutes(STATUS_ETA_CONFIG[status].presets[2] || '20');
       return;
     }
     try {
@@ -155,7 +162,8 @@ const OrderManagement = () => {
 
   const handleVendorAction = async (orderId, action) => {
     if (action === 'accept') {
-      setPrepModal({ open: true, orderId, isAccept: true });
+      setPrepModal({ open: true, orderId, targetStatus: 'Preparing' });
+      setPrepMinutes('20');
       return;
     }
     try {
@@ -167,14 +175,23 @@ const OrderManagement = () => {
   };
 
   const handleConfirmPrep = async () => {
-    const { orderId, isAccept } = prepModal;
+    const { orderId, targetStatus } = prepModal;
     try {
-      if (isAccept) {
-        await api.patch(`/orders/${orderId}/accept`, { estimatedMinutes: Number(prepMinutes) });
+      const mins = Number(prepMinutes);
+      const config = STATUS_ETA_CONFIG[targetStatus];
+      const note = mins > 0 ? `${config?.label || targetStatus} in ~${mins} min` : null;
+
+      if (targetStatus === 'Preparing') {
+        // Use /accept for vendor accept flow
+        await api.patch(`/orders/${orderId}/accept`, { estimatedMinutes: mins, note });
       } else {
-        await api.patch(`/orders/${orderId}/status`, { status: 'Preparing', estimatedMinutes: Number(prepMinutes) });
+        await api.patch(`/orders/${orderId}/status`, {
+          status: targetStatus,
+          estimatedMinutes: mins,
+          note,
+        });
       }
-      setPrepModal({ open: false, orderId: null, isAccept: false });
+      setPrepModal({ open: false, orderId: null, targetStatus: null });
       setPrepMinutes('20');
       await fetchOrders();
     } catch (err) {
@@ -593,60 +610,69 @@ const OrderManagement = () => {
         </div>
       </section>
 
-      {/* Prep Time Modal */}
+      {/* ETA Modal */}
       <Modal
         isOpen={prepModal.open}
-        onClose={() => setPrepModal({ open: false, orderId: null, isAccept: false })}
-        title={prepModal.isAccept ? 'Accept Order — Set Prep Time' : 'Set Prep Time'}
+        onClose={() => setPrepModal({ open: false, orderId: null, targetStatus: null })}
+        title={STATUS_ETA_CONFIG[prepModal.targetStatus]
+          ? `${prepModal.targetStatus === 'Preparing' ? 'Accept Order — ' : ''}Set ${STATUS_ETA_CONFIG[prepModal.targetStatus]?.label}`
+          : 'Set Estimated Time'}
         size="sm"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            How many minutes will this order take to prepare? The customer will see a live countdown.
-          </p>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Estimated prep time (minutes)
-            </label>
-            <div className="flex gap-2 mb-3">
-              {['10', '15', '20', '30', '45', '60'].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPrepMinutes(m)}
-                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                    prepMinutes === m
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-primary/50'
-                  }`}
-                >
-                  {m}
-                </button>
-              ))}
+        {prepModal.targetStatus && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <span className="material-icons-outlined text-primary">
+                {STATUS_ETA_CONFIG[prepModal.targetStatus]?.icon}
+              </span>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {STATUS_ETA_CONFIG[prepModal.targetStatus]?.question} The customer will see a live countdown.
+              </p>
             </div>
-            <Input
-              type="number"
-              value={prepMinutes}
-              onChange={(e) => setPrepMinutes(e.target.value)}
-              placeholder="Custom minutes"
-              min="1"
-              max="180"
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Estimated minutes
+              </label>
+              <div className="flex gap-2 flex-wrap mb-3">
+                {STATUS_ETA_CONFIG[prepModal.targetStatus]?.presets.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPrepMinutes(m)}
+                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                      prepMinutes === m
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-primary/50'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+              <Input
+                type="number"
+                value={prepMinutes}
+                onChange={(e) => setPrepMinutes(e.target.value)}
+                placeholder="Custom minutes"
+                min="1"
+                max="180"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setPrepModal({ open: false, orderId: null, targetStatus: null })}
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleConfirmPrep}>
+                <span className="material-icons-outlined text-sm">check</span>
+                Confirm
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setPrepModal({ open: false, orderId: null, isAccept: false })}
-            >
-              Cancel
-            </Button>
-            <Button className="flex-1" onClick={handleConfirmPrep}>
-              <span className="material-icons-outlined text-sm">check</span>
-              {prepModal.isAccept ? 'Accept Order' : 'Set Time'}
-            </Button>
-          </div>
-        </div>
+        )}
       </Modal>
     </Layout>
   );

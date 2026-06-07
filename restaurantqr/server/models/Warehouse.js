@@ -70,6 +70,23 @@ const warehouseSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isCentralKitchen: {
+      type: Boolean,
+      default: false,
+    },
+    linkedKitchen: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Warehouse',
+      default: null,
+    },
+    syncLog: [
+      {
+        syncedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        syncedAt: { type: Date, default: Date.now },
+        note: { type: String, default: null },
+        itemsSynced: { type: Number, default: 0 },
+      },
+    ],
   },
   { timestamps: true }
 );
