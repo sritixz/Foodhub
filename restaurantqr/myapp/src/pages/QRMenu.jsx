@@ -27,6 +27,10 @@ const QRMenu = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categories, setCategories] = useState(['All']);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [isBulkOrder, setIsBulkOrder] = useState(false);
+  const [bulkDetails, setBulkDetails] = useState({ companyName: '', headCount: '', eventName: '' });
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [orderDetails, setOrderDetails] = useState({
     customerName: '',
     customerPhone: '',
@@ -163,13 +167,17 @@ const QRMenu = () => {
     setCart(cart.filter((_, i) => i !== index));
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) {
       alert('Your cart is empty');
       return;
     }
+    setShowPaymentModal(true);
+  };
 
+  const handleConfirmPayment = async (selectedPaymentMethod) => {
     setSubmitting(true);
+    setShowPaymentModal(false);
 
     try {
       const totalAmount = cart.reduce((sum, item) => {
@@ -191,7 +199,8 @@ const QRMenu = () => {
           variant: item.variant || null,
           price: item.variantPrice || item.menuItem.basePrice,
         })),
-        orderType: 'QR',
+        orderType: isBulkOrder ? 'Bulk' : 'QR',
+        isBulk: isBulkOrder,
         deliveryMode: deliveryMode,
         deliveryAddress: orderDetails.deliveryAddress || null,
         notes: orderDetails.deliveryNotes || null,
@@ -200,13 +209,31 @@ const QRMenu = () => {
           name: orderDetails.customerName || 'Guest',
           phone: orderDetails.customerPhone || null,
           email: null,
+          ...(isBulkOrder && {
+            companyName: bulkDetails.companyName,
+            headCount: bulkDetails.headCount,
+            eventName: bulkDetails.eventName,
+          }),
         },
         amount: totalAmount,
+        paymentMethod: selectedPaymentMethod,
+        paymentStatus: selectedPaymentMethod === 'cash' ? 'Pending' : 'Paid',
         status: 'New',
       };
 
       const response = await publicApi.post('/orders', orderData);
-      navigate(`/orders/track/${response.data._id}`);
+
+      // Trigger payment notification on backend
+      try {
+        await publicApi.post(`/orders/${response.data._id}/payment-notification`, {
+          paymentMethod: selectedPaymentMethod,
+          amount: totalAmount,
+        });
+      } catch {
+        // non-critical — order is placed regardless
+      }
+
+      navigate(`/customer/track/${response.data._id}`);
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to place order');
     } finally {
@@ -338,6 +365,23 @@ const QRMenu = () => {
                     <h3 className="font-black text-sm uppercase tracking-widest text-slate-700">Order Summary</h3>
                   </div>
                   <div className="space-y-5">
+                    {/* Bulk Order Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons-outlined text-blue-600 text-lg">inventory</span>
+                        <div>
+                          <p className="font-black text-xs text-blue-800 dark:text-blue-200 uppercase tracking-wide">Bulk Order</p>
+                          <p className="text-[10px] text-blue-500">For events / companies</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsBulkOrder(!isBulkOrder)}
+                        className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${isBulkOrder ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                      >
+                        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform mt-0.5 ${isBulkOrder ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
                     <div className="space-y-3">
                       <Input
                         label="Full Name"
@@ -354,6 +398,32 @@ const QRMenu = () => {
                         className="text-sm border-slate-200 font-bold"
                       />
                     </div>
+                    {isBulkOrder && (
+                      <div className="space-y-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                        <Input
+                          label="Company / Org Name"
+                          placeholder="e.g. Acme Corp"
+                          value={bulkDetails.companyName}
+                          onChange={(e) => setBulkDetails({ ...bulkDetails, companyName: e.target.value })}
+                          className="text-sm"
+                        />
+                        <Input
+                          label="Head Count"
+                          type="number"
+                          placeholder="Number of people"
+                          value={bulkDetails.headCount}
+                          onChange={(e) => setBulkDetails({ ...bulkDetails, headCount: e.target.value })}
+                          className="text-sm"
+                        />
+                        <Input
+                          label="Event Name (optional)"
+                          placeholder="e.g. Team Lunch"
+                          value={bulkDetails.eventName}
+                          onChange={(e) => setBulkDetails({ ...bulkDetails, eventName: e.target.value })}
+                          className="text-sm"
+                        />
+                      </div>
+                    )}
                     <Select
                       label="Dining Mode"
                       value={orderDetails.deliveryMode}
@@ -376,7 +446,7 @@ const QRMenu = () => {
                       className="text-sm border-slate-200 font-bold"
                     />
                     <Button onClick={handleCheckout} className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-95" disabled={submitting}>
-                      {submitting ? 'PROCESSING...' : `PAY ₹${cartTotal.toFixed(2)}`}
+                      {submitting ? 'PROCESSING...' : `PROCEED TO PAY ₹${cartTotal.toFixed(2)}`}
                     </Button>
                   </div>
                 </div>
@@ -430,6 +500,23 @@ const QRMenu = () => {
               <div className="mt-10 space-y-6 pt-6 border-t-2 border-dashed border-slate-100">
                 <h3 className="font-black text-sm uppercase tracking-widest text-slate-500">Order Details</h3>
                 <div className="space-y-5">
+                  {/* Bulk Order Toggle - Mobile */}
+                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                    <div className="flex items-center gap-2">
+                      <span className="material-icons-outlined text-blue-600 text-lg">inventory</span>
+                      <div>
+                        <p className="font-black text-xs text-blue-800 dark:text-blue-200 uppercase tracking-wide">Bulk Order</p>
+                        <p className="text-[10px] text-blue-500">For events / companies</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkOrder(!isBulkOrder)}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${isBulkOrder ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform mt-0.5 ${isBulkOrder ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
                   <div className="grid grid-cols-1 gap-4">
                     <Input
                       label="Full Name"
@@ -446,6 +533,32 @@ const QRMenu = () => {
                       className="font-bold"
                     />
                   </div>
+                  {isBulkOrder && (
+                    <div className="space-y-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                      <Input
+                        label="Company / Org Name"
+                        placeholder="e.g. Acme Corp"
+                        value={bulkDetails.companyName}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, companyName: e.target.value })}
+                        className="text-sm"
+                      />
+                      <Input
+                        label="Head Count"
+                        type="number"
+                        placeholder="Number of people"
+                        value={bulkDetails.headCount}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, headCount: e.target.value })}
+                        className="text-sm"
+                      />
+                      <Input
+                        label="Event Name (optional)"
+                        placeholder="e.g. Team Lunch"
+                        value={bulkDetails.eventName}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, eventName: e.target.value })}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
                   <Select
                     label="Dining Mode"
                     value={orderDetails.deliveryMode}
@@ -473,9 +586,59 @@ const QRMenu = () => {
 
             <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex-shrink-0">
               <Button onClick={handleCheckout} className="w-full py-4 text-xl bg-primary hover:bg-primary/90 font-black shadow-xl shadow-primary/20 rounded-2xl" disabled={submitting}>
-                {submitting ? 'SENDING...' : `PLACE ORDER • ₹${cartTotal.toFixed(2)}`}
+                {submitting ? 'PROCESSING...' : `PROCEED TO PAY • ₹${cartTotal.toFixed(2)}`}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+          <div className="relative z-10 bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-black text-lg text-slate-900 dark:text-white">Choose Payment</h2>
+              <button onClick={() => setShowPaymentModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                <span className="material-icons-outlined text-sm">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {[
+                { id: 'upi', label: 'UPI', icon: 'account_balance_wallet', desc: 'GPay, PhonePe, Paytm' },
+                { id: 'card', label: 'Card', icon: 'credit_card', desc: 'Debit or Credit card' },
+                { id: 'netbanking', label: 'Net Banking', icon: 'account_balance', desc: 'Internet banking' },
+                { id: 'cash', label: 'Cash', icon: 'payments', desc: 'Pay at counter' },
+              ].map(method => (
+                <button
+                  key={method.id}
+                  onClick={() => setPaymentMethod(method.id)}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    paymentMethod === method.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className={`material-icons-outlined text-2xl mb-1 block ${paymentMethod === method.id ? 'text-primary' : 'text-slate-400'}`}>
+                    {method.icon}
+                  </span>
+                  <p className={`font-black text-sm ${paymentMethod === method.id ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{method.label}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{method.desc}</p>
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between mb-4">
+              <span className="text-sm text-slate-500">Total</span>
+              <span className="font-black text-xl text-primary">₹{cartTotal.toFixed(2)}</span>
+            </div>
+            <button
+              onClick={() => paymentMethod && handleConfirmPayment(paymentMethod)}
+              disabled={!paymentMethod || submitting}
+              className="w-full py-4 bg-primary text-white font-black text-base rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {submitting ? 'PLACING ORDER...' : `CONFIRM & PAY ₹${cartTotal.toFixed(2)}`}
+            </button>
           </div>
         </div>
       )}

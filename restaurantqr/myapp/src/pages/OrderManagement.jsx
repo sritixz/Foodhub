@@ -539,26 +539,86 @@ const OrderManagement = () => {
             <thead className="bg-slate-50 dark:bg-slate-800/50">
               <tr>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Order ID
+                </th>
+                <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Company
                 </th>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Employee Count
+                  Head Count
                 </th>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Event
                 </th>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Schedule
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Payment
+                </th>
+                <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Time
                 </th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td className="px-6 py-12 text-center text-sm text-slate-400" colSpan="4">
-                  <span className="material-icons-outlined text-4xl mb-2 opacity-20">inventory</span>
-                  <p>No active bulk orders currently.</p>
-                </td>
-              </tr>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {orders.filter(o => o.orderType === 'Bulk' || o.isBulk).length === 0 ? (
+                <tr>
+                  <td className="px-6 py-12 text-center text-sm text-slate-400" colSpan="8">
+                    <span className="material-icons-outlined text-4xl mb-2 opacity-20 block">inventory</span>
+                    <p>No active bulk orders currently.</p>
+                  </td>
+                </tr>
+              ) : (
+                orders.filter(o => o.orderType === 'Bulk' || o.isBulk).map((order) => {
+                  const totalAmount = order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+                  return (
+                    <tr key={order._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
+                        {order.orderId || order._id?.slice(-8).toUpperCase()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {order.customer?.companyName || order.customer?.name || 'N/A'}
+                          </span>
+                          {order.customer?.phone && (
+                            <span className="text-xs text-slate-400">{order.customer.phone}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                        {order.customer?.headCount ? (
+                          <span className="flex items-center gap-1">
+                            <span className="material-icons-outlined text-[14px]">group</span>
+                            {order.customer.headCount}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                        {order.customer?.eventName || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
+                        ₹{totalAmount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 capitalize">
+                        {order.paymentMethod || '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase ${getStatusBadge(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {getTimeAgo(order.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

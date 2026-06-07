@@ -26,6 +26,7 @@ import Reports from './pages/Reports';
 import CategoryManagement from './pages/CategoryManagement';
 import BudgetConfig from './pages/BudgetConfig';
 import PaymentModule from './pages/PaymentModule';
+import CustomerOrderTracking from './pages/CustomerOrderTracking';
 
 const App = () => {
   return (
@@ -36,6 +37,8 @@ const App = () => {
         <Route path="/qr/scan" element={<QRScan />} />
         <Route path="/qr/menu" element={<QRMenu />} />
         <Route path="/orders/track/:id" element={<OrderTracking />} />
+        {/* Customer-dedicated tracking page (no Layout, with ratings) */}
+        <Route path="/customer/track/:id" element={<CustomerOrderTracking />} />
 
         {/* Dashboard - all authenticated users */}
         <Route

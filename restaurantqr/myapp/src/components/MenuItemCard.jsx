@@ -1,5 +1,23 @@
 import Button from './UI/Button';
 
+const StarDisplay = ({ rating, count }) => {
+  if (!rating) return null;
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((s) => (
+          <span key={s} className={`text-sm ${s <= full ? 'text-yellow-400' : s === full + 1 && half ? 'text-yellow-300' : 'text-slate-300'}`}>★</span>
+        ))}
+      </div>
+      <span className="text-xs text-slate-500 dark:text-slate-400">
+        {rating.toFixed(1)}{count ? ` (${count})` : ''}
+      </span>
+    </div>
+  );
+};
+
 const MenuItemCard = ({ item, onAddToCart, showAddButton = true }) => {
   const handleAddToCart = () => {
     if (onAddToCart) {
@@ -52,6 +70,11 @@ const MenuItemCard = ({ item, onAddToCart, showAddButton = true }) => {
             </Button>
           )}
         </div>
+        {item.averageRating > 0 && (
+          <div className="mt-2">
+            <StarDisplay rating={item.averageRating} count={item.ratingCount} />
+          </div>
+        )}
         {item.variants && item.variants.length > 0 && (
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             {item.variants.length} variant{item.variants.length > 1 ? 's' : ''} available

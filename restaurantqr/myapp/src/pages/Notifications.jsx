@@ -69,8 +69,12 @@ const Notifications = () => {
     if (!notification.read) {
       markRead(notification._id);
     }
-    if (notification.relatedId && (notification.type === 'order' || notification.type === 'delivery')) {
-      navigate(`/orders/track/${notification.relatedId}`);
+    if (notification.relatedId) {
+      if (notification.type === 'order' || notification.type === 'delivery') {
+        navigate(`/orders/track/${notification.relatedId}`);
+      } else if (notification.type === 'payment') {
+        navigate(`/orders/track/${notification.relatedId}`);
+      }
     }
   };
 
