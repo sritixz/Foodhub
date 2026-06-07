@@ -15,6 +15,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: 'handshake', label: 'Vendor Management', path: '/vendors' },
     { icon: 'menu_book', label: 'Menu & Catalog', path: '/menu/browse' },
     ...(user?.role === 'Admin' ? [{ icon: 'category', label: 'Category Management', path: '/categories' }] : []),
+    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'account_balance_wallet', label: 'Budget Config', path: '/budget-config' }] : []),
     { icon: 'inventory_2', label: 'Inventory Management', path: '/inventory' },
     { icon: 'shopping_cart', label: 'Order Management', path: '/orders' },
     { icon: 'local_shipping', label: 'Delivery Dashboard', path: '/delivery' },

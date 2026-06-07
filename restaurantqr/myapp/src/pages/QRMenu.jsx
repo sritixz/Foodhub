@@ -102,7 +102,28 @@ const QRMenu = () => {
   };
 
   const filterItems = () => {
-    let filtered = menuItems.filter(item => item.status === 'Available');
+    const now = new Date();
+    const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const todayLabel = dayMap[now.getDay()];
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let filtered = menuItems.filter((item) => {
+      if (item.status !== 'Available') return false;
+      if (item.availabilityType === 'Custom Time Slots') {
+        if (item.days?.length > 0 && !item.days.includes(todayLabel)) return false;
+        if (item.timeSlots?.length > 0) {
+          const inSlot = item.timeSlots.some((slot) => {
+            if (!slot.start || !slot.end) return true;
+            const [sh, sm] = slot.start.split(':').map(Number);
+            const [eh, em] = slot.end.split(':').map(Number);
+            return currentMinutes >= sh * 60 + sm && currentMinutes <= eh * 60 + em;
+          });
+          if (!inSlot) return false;
+        }
+      }
+      return true;
+    });
+
     if (selectedCategory !== 'All') {
       filtered = filtered.filter(item => {
         const catName = item.category?.name || item.category;

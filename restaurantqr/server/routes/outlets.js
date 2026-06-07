@@ -68,16 +68,40 @@ router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, 
 // Update outlet (protected)
 router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
   try {
+    // Build a flat $set object to avoid nested object replacement issues
+    const updateData = { ...req.body };
+    
+    // Explicitly handle nested documents field
+    const setObj = {};
+    for (const [key, value] of Object.entries(updateData)) {
+      if (key === 'documents' && value && typeof value === 'object') {
+        if (value.rentAgreement !== undefined) setObj['documents.rentAgreement'] = value.rentAgreement;
+        if (value.fssaiLicense !== undefined) setObj['documents.fssaiLicense'] = value.fssaiLicense;
+        if (value.otherDocs !== undefined) setObj['documents.otherDocs'] = value.otherDocs;
+      } else if (key === 'contact' && value && typeof value === 'object') {
+        Object.entries(value).forEach(([k, v]) => { setObj[`contact.${k}`] = v; });
+      } else if (key === 'location' && value && typeof value === 'object') {
+        Object.entries(value).forEach(([k, v]) => { setObj[`location.${k}`] = v; });
+      } else if (key === 'operatingHours' && value && typeof value === 'object') {
+        Object.entries(value).forEach(([k, v]) => { setObj[`operatingHours.${k}`] = v; });
+      } else if (key === 'sales' && value && typeof value === 'object') {
+        Object.entries(value).forEach(([k, v]) => { setObj[`sales.${k}`] = v; });
+      } else {
+        setObj[key] = value;
+      }
+    }
+
     const outlet = await Outlet.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true, runValidators: true }
+      { $set: setObj },
+      { new: true, runValidators: false }
     );
     if (!outlet) {
       return res.status(404).json({ message: 'Outlet not found' });
     }
     res.json(outlet);
   } catch (error) {
+    console.error('Outlet update error:', error);
     res.status(400).json({ message: error.message });
   }
 });

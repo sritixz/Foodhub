@@ -208,7 +208,7 @@ router.post('/', async (req, res) => {
 // Update order status (protected)
 router.patch('/:id/status', authenticate, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, estimatedMinutes, note } = req.body;
     const allowedStatuses = ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'];
 
     if (!allowedStatuses.includes(status)) {
@@ -236,20 +236,38 @@ router.patch('/:id/status', authenticate, async (req, res) => {
       }
     }
 
+    const updateFields = { status };
+
+    // When moving to Preparing, optionally set estimated ready time
+    if (status === 'Preparing' && estimatedMinutes && Number(estimatedMinutes) > 0) {
+      updateFields.estimatedReadyTime = new Date(Date.now() + Number(estimatedMinutes) * 60 * 1000);
+    }
+
+    // Append to status timeline
+    const timelineEntry = {
+      status,
+      timestamp: new Date(),
+      note: note || null,
+      setBy: req.user._id,
+    };
+
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      { status },
+      {
+        ...updateFields,
+        $push: { statusTimeline: timelineEntry },
+      },
       { new: true, runValidators: true }
     )
       .populate('vendor', 'name outletId')
       .populate('items.menuItem', 'name image basePrice')
-      .populate('assignedTo', 'name phone');
+      .populate('assignedTo', 'name phone')
+      .populate('statusTimeline.setBy', 'name role');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Broadcast order update via SSE
     broadcastOrderUpdate(order);
 
     const vendorUsers = await User.find({ role: 'Vendor', outlet: order.vendor?._id });
@@ -411,7 +429,6 @@ router.patch('/:id/accept', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Check if user is vendor for this order
     if (order.vendor.toString() !== req.user.outlet?.toString() && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'You can only accept orders for your outlet' });
     }
@@ -420,13 +437,25 @@ router.patch('/:id/accept', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Order cannot be accepted in current status' });
     }
 
+    const { estimatedMinutes, note } = req.body;
+
     order.status = 'Preparing';
+    if (estimatedMinutes && Number(estimatedMinutes) > 0) {
+      order.estimatedReadyTime = new Date(Date.now() + Number(estimatedMinutes) * 60 * 1000);
+    }
+    order.statusTimeline.push({
+      status: 'Preparing',
+      timestamp: new Date(),
+      note: note || (estimatedMinutes ? `Ready in ~${estimatedMinutes} min` : null),
+      setBy: req.user._id,
+    });
     await order.save();
 
     const populatedOrder = await Order.findById(order._id)
       .populate('vendor', 'name outletId')
       .populate('items.menuItem', 'name image basePrice')
-      .populate('assignedTo', 'name phone');
+      .populate('assignedTo', 'name phone')
+      .populate('statusTimeline.setBy', 'name role');
 
     broadcastOrderUpdate(populatedOrder);
     const vendorUsers = await User.find({ role: 'Vendor', outlet: populatedOrder.vendor?._id });

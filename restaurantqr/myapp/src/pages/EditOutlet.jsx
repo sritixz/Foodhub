@@ -6,6 +6,7 @@ import Input from '../components/UI/Input';
 import Select from '../components/UI/Select';
 import Card from '../components/UI/Card';
 import ImageUpload from '../components/ImageUpload';
+import Modal from '../components/UI/Modal';
 import api from '../utils/api';
 
 const EditOutlet = () => {
@@ -14,7 +15,9 @@ const EditOutlet = () => {
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [docViewer, setDocViewer] = useState({ open: false, url: null, loading: false });
 
   useEffect(() => {
     fetchOutlet();
@@ -74,6 +77,18 @@ const EditOutlet = () => {
     }
   };
 
+  const openDocument = async (url) => {
+    setDocViewer({ open: true, url: null, loading: true });
+    try {
+      const res = await api.post('/upload/presigned-url', { url });
+      setDocViewer({ open: true, url: res.data.url, loading: false });
+    } catch {
+      // Server unavailable or presign failed — show the raw URL in iframe anyway
+      // (works if bucket has public access, shows download option if not)
+      setDocViewer({ open: true, url, loading: false });
+    }
+  };
+
   const handleFileChange = (field, file) => {
     if (field === 'logo') {
       setFormData(prev => ({ ...prev, logo: file }));
@@ -105,11 +120,46 @@ const EditOutlet = () => {
         const formDataUpload = new FormData();
         formDataUpload.append('logo', formData.logo);
         const uploadResponse = await api.post('/upload/outlet-logo', formDataUpload, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         logoUrl = uploadResponse.data.url;
+      }
+
+      // Upload documents to S3 if new files selected
+      const documents = { ...(formData.documents || {}) };
+
+      if (documents.rentAgreement instanceof File) {
+        const fd = new FormData();
+        fd.append('document', documents.rentAgreement);
+        const res = await api.post('/upload/outlet-documents', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        documents.rentAgreement = res.data.url;
+      }
+
+      if (documents.fssaiLicense instanceof File) {
+        const fd = new FormData();
+        fd.append('document', documents.fssaiLicense);
+        const res = await api.post('/upload/outlet-documents', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        documents.fssaiLicense = res.data.url;
+      }
+
+      if (Array.isArray(documents.otherDocs)) {
+        documents.otherDocs = await Promise.all(
+          documents.otherDocs.map(async (f) => {
+            if (f instanceof File) {
+              const fd = new FormData();
+              fd.append('document', f);
+              const res = await api.post('/upload/outlet-documents', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+              return res.data.url;
+            }
+            return f;
+          })
+        );
       }
 
       // Prepare outlet data for API
@@ -135,6 +185,7 @@ const EditOutlet = () => {
           zone: formData.location?.zone || '',
         },
         logo: logoUrl,
+        documents,
         sales: formData.sales || {
           today: 0,
           monthly: 0,
@@ -149,10 +200,26 @@ const EditOutlet = () => {
         },
       };
 
-      await api.put(`/outlets/${id}`, outletData);
-      navigate('/');
+      console.log('Sending documents:', {
+        rentAgreement: documents.rentAgreement ? documents.rentAgreement.substring(0, 50) + '...' : null,
+        fssaiLicense: documents.fssaiLicense ? documents.fssaiLicense.substring(0, 50) + '...' : null,
+        otherDocs: documents.otherDocs?.length,
+      });
+
+      const result = await api.put(`/outlets/${id}`, outletData);
+      console.log('Save result documents:', result.data?.documents);
+      
+      // Reload fresh data from server to confirm what was saved
+      setFormData({
+        ...result.data,
+        deliveryZonesInput: result.data.deliveryZones?.join(', ') || '',
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update outlet');
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to update outlet';
+      setError(msg);
+      console.error('Save error:', err.response?.data || err);
     } finally {
       setSaving(false);
     }
@@ -173,6 +240,12 @@ const EditOutlet = () => {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
             {error}
+          </div>
+        )}
+        {saveSuccess && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg flex items-center gap-2">
+            <span className="material-icons-outlined text-sm">check_circle</span>
+            Changes saved successfully!
           </div>
         )}
         {/* Business Information */}
@@ -346,79 +419,118 @@ const EditOutlet = () => {
         {/* Documents */}
         <Card title="Documents">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 hover:border-primary dark:hover:border-primary transition-colors bg-slate-50/50 dark:bg-slate-900/50 group">
-              <div className="flex justify-between items-start mb-2">
+
+            {/* Rent Agreement */}
+            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex justify-between items-start mb-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">Rent Agreement</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    {formData.documents?.rentAgreement?.name || 'No file uploaded'}
+                  <p className="text-xs mt-0.5">
+                    {formData.documents?.rentAgreement instanceof File
+                      ? <span className="text-primary">{formData.documents.rentAgreement.name}</span>
+                      : formData.documents?.rentAgreement
+                        ? <span className="text-green-500 flex items-center gap-1"><span className="material-icons-outlined text-sm">check_circle</span>Uploaded</span>
+                        : <span className="text-slate-400">No file uploaded</span>}
                   </p>
                 </div>
-                <label>
-                  <button className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors">
+                <label className="cursor-pointer" title="Upload new file">
+                  <span className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors inline-flex">
                     <span className="material-icons-outlined">upload</span>
-                  </button>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => handleFileChange('rentAgreement', e.target.files[0])}
-                  />
+                  </span>
+                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={(e) => handleFileChange('rentAgreement', e.target.files[0])} />
                 </label>
               </div>
-              <div className="flex items-center text-[11px] text-slate-500 dark:text-slate-400 mt-4">
-                <span className="material-icons-outlined text-[14px] mr-1.5">schedule</span>
-                Uploaded on {formData.documents?.rentAgreement ? new Date().toLocaleDateString() : 'N/A'}
-              </div>
+              {formData.documents?.rentAgreement && !(formData.documents.rentAgreement instanceof File) && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => openDocument(formData.documents.rentAgreement)}
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-medium">
+                    <span className="material-icons-outlined text-sm">visibility</span> View
+                  </button>
+                  <a href={formData.documents.rentAgreement} download
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-medium">
+                    <span className="material-icons-outlined text-sm">download</span> Download
+                  </a>
+                </div>
+              )}
             </div>
-            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 hover:border-primary dark:hover:border-primary transition-colors bg-slate-50/50 dark:bg-slate-900/50 group">
-              <div className="flex justify-between items-start mb-2">
+
+            {/* FSSAI License */}
+            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex justify-between items-start mb-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">FSSAI License</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    {formData.documents?.fssaiLicense?.name || 'No file uploaded'}
+                  <p className="text-xs mt-0.5">
+                    {formData.documents?.fssaiLicense instanceof File
+                      ? <span className="text-primary">{formData.documents.fssaiLicense.name}</span>
+                      : formData.documents?.fssaiLicense
+                        ? <span className="text-green-500 flex items-center gap-1"><span className="material-icons-outlined text-sm">check_circle</span>Uploaded</span>
+                        : <span className="text-slate-400">No file uploaded</span>}
                   </p>
                 </div>
-                <label>
-                  <button className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors">
+                <label className="cursor-pointer" title="Upload new file">
+                  <span className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors inline-flex">
                     <span className="material-icons-outlined">upload</span>
-                  </button>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={(e) => handleFileChange('fssaiLicense', e.target.files[0])}
-                  />
+                  </span>
+                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={(e) => handleFileChange('fssaiLicense', e.target.files[0])} />
                 </label>
               </div>
-              <div className="flex items-center text-[11px] text-slate-500 dark:text-slate-400 mt-4">
-                <span className="material-icons-outlined text-[14px] mr-1.5">schedule</span>
-                Uploaded on {formData.documents?.fssaiLicense ? new Date().toLocaleDateString() : 'N/A'}
-              </div>
+              {formData.documents?.fssaiLicense && !(formData.documents.fssaiLicense instanceof File) && (
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => openDocument(formData.documents.fssaiLicense)}
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-medium">
+                    <span className="material-icons-outlined text-sm">visibility</span> View
+                  </button>
+                  <a href={formData.documents.fssaiLicense} download
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-medium">
+                    <span className="material-icons-outlined text-sm">download</span> Download
+                  </a>
+                </div>
+              )}
             </div>
-            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 hover:border-primary dark:hover:border-primary transition-colors bg-slate-50/50 dark:bg-slate-900/50 group">
-              <div className="flex justify-between items-start mb-2">
+
+            {/* Other Documents */}
+            <div className="border border-slate-100 dark:border-slate-700 rounded-xl p-5 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex justify-between items-start mb-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">Other Documents</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    {formData.documents?.otherDocs?.length || 0} files
+                    {formData.documents?.otherDocs?.filter(f => !(f instanceof File)).length || 0} saved
+                    {formData.documents?.otherDocs?.filter(f => f instanceof File).length > 0
+                      ? ` · ${formData.documents.otherDocs.filter(f => f instanceof File).length} pending upload`
+                      : ''}
                   </p>
                 </div>
-                <label>
-                  <button className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors">
+                <label className="cursor-pointer" title="Upload files">
+                  <span className="text-primary hover:bg-orange-50 dark:hover:bg-orange-900/20 p-1.5 rounded-lg transition-colors inline-flex">
                     <span className="material-icons-outlined">upload</span>
-                  </button>
-                  <input
-                    type="file"
-                    className="hidden"
-                    multiple
-                    onChange={(e) => handleFileChange('otherDocs', Array.from(e.target.files))}
-                  />
+                  </span>
+                  <input type="file" className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={(e) => handleFileChange('otherDocs', Array.from(e.target.files))} />
                 </label>
               </div>
-              <div className="flex items-center text-[11px] text-slate-500 dark:text-slate-400 mt-4">
-                <span className="material-icons-outlined text-[14px] mr-1.5">schedule</span>
-                Last updated {new Date().toLocaleDateString()}
-              </div>
+              {formData.documents?.otherDocs?.filter(f => !(f instanceof File)).length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  {formData.documents.otherDocs.filter(f => !(f instanceof File)).map((url, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="material-icons-outlined text-slate-400 text-sm">insert_drive_file</span>
+                      <span className="text-xs text-slate-500 truncate flex-1">Document {i + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => openDocument(url)}
+                        className="text-primary hover:underline text-xs font-medium">View</button>
+                      <a href={url} download className="text-slate-500 hover:text-slate-700 text-xs">↓</a>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
           </div>
         </Card>
 
@@ -432,6 +544,53 @@ const EditOutlet = () => {
           </Button>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      <Modal
+        isOpen={docViewer.open}
+        onClose={() => setDocViewer({ open: false, url: null, loading: false })}
+        title="Document Viewer"
+        size="lg"
+      >
+        {docViewer.loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="ml-3 text-slate-500">Loading document...</p>
+          </div>
+        ) : docViewer.url ? (
+          <div className="space-y-3">
+            <iframe
+              src={docViewer.url}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700"
+              style={{ height: '70vh' }}
+              title="Document Preview"
+              onError={() => {}}
+            />
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-slate-400">If the document doesn't load, use the download button.</p>
+              <div className="flex gap-2">
+                <a
+                  href={docViewer.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-sm px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-medium"
+                >
+                  <span className="material-icons-outlined text-sm">open_in_new</span> Open in tab
+                </a>
+                <a
+                  href={docViewer.url}
+                  download
+                  className="flex items-center gap-1 text-sm px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+                >
+                  <span className="material-icons-outlined text-sm">download</span> Download
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-center text-slate-500 py-8">Failed to load document.</p>
+        )}
+      </Modal>
     </Layout>
   );
 };

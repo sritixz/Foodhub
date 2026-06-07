@@ -11,6 +11,7 @@ const Reports = () => {
   const [dailyOrders, setDailyOrders] = useState([]);
   const [outletRevenue, setOutletRevenue] = useState([]);
   const [orderTypes, setOrderTypes] = useState([]);
+  const [paymentSummary, setPaymentSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('month');
@@ -26,14 +27,16 @@ const Reports = () => {
     try {
       setLoading(true);
       setError('');
-      const [summaryRes, dailyRes, typesRes] = await Promise.all([
+      const [summaryRes, dailyRes, typesRes, paymentRes] = await Promise.all([
         api.get(`/reports/summary?period=${period}`),
         api.get(`/reports/daily-orders?days=${period === 'week' ? 7 : period === 'month' ? 30 : 14}`),
         api.get(`/reports/order-types?period=${period}`),
+        api.get(`/reports/payment-summary?period=${period}`),
       ]);
       setSummary(summaryRes.data);
       setDailyOrders(dailyRes.data);
       setOrderTypes(typesRes.data);
+      setPaymentSummary(paymentRes.data);
 
       if (isAdmin) {
         const outletRes = await api.get(`/reports/revenue-by-outlet?period=${period}`);
@@ -271,6 +274,91 @@ const Reports = () => {
             </div>
           </Card>
         </div>
+
+        {/* Payment Report — visible to Admin and Company Admin */}
+        {isAdmin && paymentSummary && (
+          <>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white pt-2">Payment Report</h3>
+
+            {/* Payment KPI cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Collected Revenue</p>
+                <p className="text-2xl font-bold mt-1 text-green-600">₹{(paymentSummary.deliveredRevenue || 0).toFixed(0)}</p>
+                <p className="text-xs text-slate-400 mt-1">{paymentSummary.deliveredOrders} delivered orders</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Cancelled Revenue</p>
+                <p className="text-2xl font-bold mt-1 text-red-500">₹{(paymentSummary.cancelledRevenue || 0).toFixed(0)}</p>
+                <p className="text-xs text-slate-400 mt-1">{paymentSummary.cancelledOrders} cancelled orders</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Cancellation Rate</p>
+                <p className="text-2xl font-bold mt-1 text-yellow-500">{paymentSummary.cancellationRate}%</p>
+                <p className="text-xs text-slate-400 mt-1">of {paymentSummary.totalOrders} total orders</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Avg Order Value</p>
+                <p className="text-2xl font-bold mt-1">₹{(paymentSummary.avgOrderValue || 0).toFixed(0)}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Min ₹{(paymentSummary.minOrder || 0).toFixed(0)} · Max ₹{(paymentSummary.maxOrder || 0).toFixed(0)}
+                </p>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Revenue by order type */}
+              <Card>
+                <h3 className="font-bold mb-4">Revenue by Order Type</h3>
+                {!paymentSummary.revenueByType?.length ? (
+                  <p className="text-sm text-slate-400 py-4">No data</p>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentSummary.revenueByType.map((r) => {
+                      const maxRev = Math.max(...paymentSummary.revenueByType.map((x) => x.revenue), 1);
+                      return (
+                        <div key={r.type}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="font-medium">{r.type}</span>
+                            <span className="text-slate-500">{r.orders} orders · ₹{r.revenue.toFixed(0)}</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary rounded-full" style={{ width: `${(r.revenue / maxRev) * 100}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+
+              {/* Revenue by delivery mode */}
+              <Card>
+                <h3 className="font-bold mb-4">Revenue by Delivery Mode</h3>
+                {!paymentSummary.revenueByMode?.length ? (
+                  <p className="text-sm text-slate-400 py-4">No data</p>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentSummary.revenueByMode.map((r) => {
+                      const maxRev = Math.max(...paymentSummary.revenueByMode.map((x) => x.revenue), 1);
+                      return (
+                        <div key={r.mode}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="font-medium">{r.mode}</span>
+                            <span className="text-slate-500">{r.orders} orders · ₹{r.revenue.toFixed(0)}</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-orange-400 rounded-full" style={{ width: `${(r.revenue / maxRev) * 100}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </div>
+          </>
+        )}
       </div>
     </Layout>
   );

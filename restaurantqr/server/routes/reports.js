@@ -11,11 +11,11 @@ const router = express.Router();
 const getMatchByRole = (user, dateFilter) => {
   const match = {};
 
+  // Vendor sees only their own outlet's orders
   if (user.role === 'Vendor' && user.outlet) {
     match.vendor = new mongoose.Types.ObjectId(user.outlet.toString());
-  } else if (user.role === 'Company Admin') {
-    match.orderType = 'Bulk';
   }
+  // Company Admin and Admin see all orders across all outlets
 
   if (dateFilter) {
     match.createdAt = dateFilter;
@@ -274,6 +274,86 @@ router.get('/export/csv', authenticate, authorize('Admin', 'Company Admin', 'Ven
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=orders-report.csv');
     res.send(csv);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Payment summary — revenue by status, avg value, cancellation rate
+router.get('/payment-summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+  try {
+    const dateFilter = parseDateRange(req.query);
+    const match = getMatchByRole(req.user, dateFilter);
+
+    const [stats] = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$amount' },
+          totalOrders: { $sum: 1 },
+          deliveredRevenue: {
+            $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, '$amount', 0] },
+          },
+          deliveredOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] },
+          },
+          cancelledOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, 1, 0] },
+          },
+          cancelledRevenue: {
+            $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, '$amount', 0] },
+          },
+          avgOrderValue: { $avg: '$amount' },
+          maxOrder: { $max: '$amount' },
+          minOrder: { $min: '$amount' },
+        },
+      },
+    ]);
+
+    // Revenue by order type
+    const revenueByType = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$orderType',
+          orders: { $sum: 1 },
+          revenue: { $sum: '$amount' },
+        },
+      },
+      { $sort: { revenue: -1 } },
+    ]);
+
+    // Revenue by delivery mode
+    const revenueByMode = await Order.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: '$deliveryMode',
+          orders: { $sum: 1 },
+          revenue: { $sum: '$amount' },
+        },
+      },
+      { $sort: { revenue: -1 } },
+    ]);
+
+    const totalOrders = stats?.totalOrders || 0;
+    const cancelledOrders = stats?.cancelledOrders || 0;
+
+    res.json({
+      totalRevenue: stats?.totalRevenue || 0,
+      deliveredRevenue: stats?.deliveredRevenue || 0,
+      cancelledRevenue: stats?.cancelledRevenue || 0,
+      totalOrders,
+      deliveredOrders: stats?.deliveredOrders || 0,
+      cancelledOrders,
+      cancellationRate: totalOrders > 0 ? ((cancelledOrders / totalOrders) * 100).toFixed(1) : 0,
+      avgOrderValue: stats?.avgOrderValue || 0,
+      maxOrder: stats?.maxOrder || 0,
+      minOrder: stats?.minOrder || 0,
+      revenueByType: revenueByType.map((r) => ({ type: r._id, orders: r.orders, revenue: r.revenue })),
+      revenueByMode: revenueByMode.map((r) => ({ mode: r._id, orders: r.orders, revenue: r.revenue })),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -27,6 +27,7 @@ const EditMenuItem = () => {
     status: 'Available',
     availabilityType: 'All Day',
     days: [],
+    timeSlots: [],
     stockType: 'Unlimited',
     basePrice: 0,
     variants: [],
@@ -74,6 +75,7 @@ const EditMenuItem = () => {
           status: menuItem.status || 'Available',
           availabilityType: menuItem.availabilityType || 'All Day',
           days: menuItem.days || [],
+          timeSlots: menuItem.timeSlots || [],
           stockType: menuItem.stockType || 'Unlimited',
           basePrice: menuItem.basePrice || 0,
           variants: menuItem.variants || [],
@@ -141,6 +143,22 @@ const EditMenuItem = () => {
     }));
   };
 
+  const addTimeSlot = () => {
+    setFormData(prev => ({ ...prev, timeSlots: [...prev.timeSlots, { start: '09:00', end: '17:00' }] }));
+  };
+
+  const removeTimeSlot = (idx) => {
+    setFormData(prev => ({ ...prev, timeSlots: prev.timeSlots.filter((_, i) => i !== idx) }));
+  };
+
+  const updateTimeSlot = (idx, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.timeSlots];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...prev, timeSlots: updated };
+    });
+  };
+
   const handleSubmit = async (isDraft = false) => {
     if (!formData.name || !formData.vendor) {
       setError('Please fill in all required fields');
@@ -160,6 +178,7 @@ const EditMenuItem = () => {
         status: isDraft ? 'Draft' : formData.status,
         availabilityType: formData.availabilityType,
         days: formData.days,
+        timeSlots: formData.availabilityType === 'Custom Time Slots' ? formData.timeSlots.filter(s => s.start && s.end) : [],
         stockType: formData.stockType,
         basePrice: parseFloat(formData.basePrice) || 0,
         variants: formData.variants.filter(v => v.name && v.price),
@@ -375,6 +394,53 @@ const EditMenuItem = () => {
                     ))}
                   </div>
                 </div>
+                {formData.availabilityType === 'Custom Time Slots' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium">Time Slots</label>
+                      <button
+                        type="button"
+                        onClick={addTimeSlot}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <span className="material-icons-outlined text-sm">add</span>
+                        Add Slot
+                      </button>
+                    </div>
+                    {formData.timeSlots.length === 0 && (
+                      <p className="text-xs text-slate-400 mb-2">No time slots added. Item will be available all day on selected days.</p>
+                    )}
+                    <div className="space-y-2">
+                      {formData.timeSlots.map((slot, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-xs text-slate-500 font-medium w-6">{idx + 1}</span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <input
+                              type="time"
+                              value={slot.start}
+                              onChange={(e) => updateTimeSlot(idx, 'start', e.target.value)}
+                              className="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            />
+                            <span className="text-xs text-slate-400">to</span>
+                            <input
+                              type="time"
+                              value={slot.end}
+                              onChange={(e) => updateTimeSlot(idx, 'end', e.target.value)}
+                              className="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeTimeSlot(idx)}
+                            className="text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            <span className="material-icons-outlined text-sm">delete</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium mb-3">Stock Type</label>
                   <div className="flex gap-2">

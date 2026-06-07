@@ -99,6 +99,17 @@ const MenuBrowse = () => {
     }
   };
 
+  const handleToggleStatus = async (item) => {
+    const newStatus = item.status === 'Available' ? 'Paused' : 'Available';
+    try {
+      await api.patch(`/menu-items/${item._id}/status`, { status: newStatus });
+      setMenuItems((prev) => prev.map((m) => m._id === item._id ? { ...m, status: newStatus } : m));
+      setFilteredItems((prev) => prev.map((m) => m._id === item._id ? { ...m, status: newStatus } : m));
+    } catch (error) {
+      alert('Failed to update item status');
+    }
+  };
+
   const categoryOptions = categories.map((cat) => ({
     value: cat._id === 'all' ? 'All' : cat._id,
     label: cat._id === 'all' ? 'All' : `${cat.name}${cat.menuItemCount !== undefined ? ` (${cat.menuItemCount})` : ''}`,
@@ -200,15 +211,32 @@ const MenuBrowse = () => {
                   </span>
                 </div>
               </div>
-              <div className="p-4">
+                <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-slate-900 dark:text-white">{item.name}</h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${item.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                  <div className="flex items-center gap-2">
+                    {/* Availability toggle */}
+                    <button
+                      onClick={() => handleToggleStatus(item)}
+                      title={item.status === 'Available' ? 'Mark as Unavailable' : 'Mark as Available'}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                        item.status === 'Available' ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                          item.status === 'Available' ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                    <span className={`px-2 py-1 text-xs font-medium rounded ${
+                      item.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                       item.status === 'Paused' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                         'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
                     }`}>
-                    {item.status}
-                  </span>
+                      {item.status}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 line-clamp-2">
                   {item.description || 'No description'}
@@ -218,6 +246,23 @@ const MenuBrowse = () => {
                     <span className="material-icons-outlined text-[14px]">storefront</span>
                     {item.vendor.name}
                   </p>
+                )}
+                {/* Time slot info */}
+                {item.availabilityType === 'Custom Time Slots' && (
+                  <div className="mb-2 space-y-0.5">
+                    {item.days?.length > 0 && (
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <span className="material-icons-outlined text-[13px]">calendar_today</span>
+                        {item.days.join(', ')}
+                      </p>
+                    )}
+                    {item.timeSlots?.length > 0 && (
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <span className="material-icons-outlined text-[13px]">schedule</span>
+                        {item.timeSlots.map((s) => `${s.start}–${s.end}`).join(', ')}
+                      </p>
+                    )}
+                  </div>
                 )}
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-lg font-bold text-primary">₹{item.basePrice || '0.00'}</span>

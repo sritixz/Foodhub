@@ -3,6 +3,7 @@ import Layout from '../components/Layout/Layout';
 import Button from '../components/UI/Button';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
+import Modal from '../components/UI/Modal';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +18,10 @@ const OrderManagement = () => {
   const [selectedOutlet, setSelectedOutlet] = useState('All Outlets');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Prep time modal
+  const [prepModal, setPrepModal] = useState({ open: false, orderId: null, isAccept: false });
+  const [prepMinutes, setPrepMinutes] = useState('20');
 
   useEffect(() => {
     fetchOrders();
@@ -135,6 +140,11 @@ const OrderManagement = () => {
   }, [orderType, timeFilter, selectedOutlet]);
 
   const handleStatusUpdate = async (orderId, status) => {
+    // For Preparing, show prep time modal first
+    if (status === 'Preparing') {
+      setPrepModal({ open: true, orderId, isAccept: false });
+      return;
+    }
     try {
       await api.patch(`/orders/${orderId}/status`, { status });
       await fetchOrders();
@@ -144,8 +154,28 @@ const OrderManagement = () => {
   };
 
   const handleVendorAction = async (orderId, action) => {
+    if (action === 'accept') {
+      setPrepModal({ open: true, orderId, isAccept: true });
+      return;
+    }
     try {
       await api.patch(`/orders/${orderId}/${action}`);
+      await fetchOrders();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update order');
+    }
+  };
+
+  const handleConfirmPrep = async () => {
+    const { orderId, isAccept } = prepModal;
+    try {
+      if (isAccept) {
+        await api.patch(`/orders/${orderId}/accept`, { estimatedMinutes: Number(prepMinutes) });
+      } else {
+        await api.patch(`/orders/${orderId}/status`, { status: 'Preparing', estimatedMinutes: Number(prepMinutes) });
+      }
+      setPrepModal({ open: false, orderId: null, isAccept: false });
+      setPrepMinutes('20');
       await fetchOrders();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update order');
@@ -518,8 +548,7 @@ const OrderManagement = () => {
       </Card>
 
       {/* Delivery Management */}
-      <section>
-        <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Delivery Management</h3>
+      <section>        <h3 className="font-semibold text-slate-800 dark:text-white mb-4">Delivery Management</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {deliveryOrders.length === 0 ? (
             <Card>
@@ -563,6 +592,62 @@ const OrderManagement = () => {
           )}
         </div>
       </section>
+
+      {/* Prep Time Modal */}
+      <Modal
+        isOpen={prepModal.open}
+        onClose={() => setPrepModal({ open: false, orderId: null, isAccept: false })}
+        title={prepModal.isAccept ? 'Accept Order — Set Prep Time' : 'Set Prep Time'}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            How many minutes will this order take to prepare? The customer will see a live countdown.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Estimated prep time (minutes)
+            </label>
+            <div className="flex gap-2 mb-3">
+              {['10', '15', '20', '30', '45', '60'].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPrepMinutes(m)}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                    prepMinutes === m
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-primary/50'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <Input
+              type="number"
+              value={prepMinutes}
+              onChange={(e) => setPrepMinutes(e.target.value)}
+              placeholder="Custom minutes"
+              min="1"
+              max="180"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setPrepModal({ open: false, orderId: null, isAccept: false })}
+            >
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={handleConfirmPrep}>
+              <span className="material-icons-outlined text-sm">check</span>
+              {prepModal.isAccept ? 'Accept Order' : 'Set Time'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

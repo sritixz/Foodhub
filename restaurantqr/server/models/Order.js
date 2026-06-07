@@ -88,6 +88,18 @@ const orderSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    estimatedReadyTime: {
+      type: Date,
+      default: null,
+    },
+    statusTimeline: [
+      {
+        status: { type: String },
+        timestamp: { type: Date, default: Date.now },
+        note: { type: String, default: null },
+        setBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      },
+    ],
   },
   {
     timestamps: true,

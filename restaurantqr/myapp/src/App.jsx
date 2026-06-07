@@ -24,6 +24,7 @@ import WarehouseManagement from './pages/WarehouseManagement';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import CategoryManagement from './pages/CategoryManagement';
+import BudgetConfig from './pages/BudgetConfig';
 
 const App = () => {
   return (
@@ -217,6 +218,16 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
               <CategoryManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Budget Configuration - Company Admin / Admin */}
+        <Route
+          path="/budget-config"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <BudgetConfig />
             </ProtectedRoute>
           }
         />

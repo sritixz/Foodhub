@@ -1,7 +1,10 @@
 import express from 'express';
 import authenticate from '../middleware/auth.js';
-import { uploadSingleToS3, uploadMultipleToS3 } from '../middleware/upload.js';
+import { uploadSingleToS3, uploadMultipleToS3, uploadDocSingleToS3 } from '../middleware/upload.js';
 import { deleteFromS3, extractKeyFromUrl } from '../utils/s3Upload.js';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import s3Client, { BUCKET_NAME } from '../config/s3.js';
 
 const router = express.Router();
 
@@ -50,7 +53,7 @@ router.post('/outlet-logo', authenticate, uploadSingleToS3('logo', 'outlet-logos
 });
 
 // Upload outlet documents (protected - Admin/Company Admin)
-router.post('/outlet-documents', authenticate, uploadSingleToS3('document', 'outlet-documents'), async (req, res) => {
+router.post('/outlet-documents', authenticate, uploadDocSingleToS3('document', 'outlet-documents'), async (req, res) => {
   try {
     if (!['Admin', 'Company Admin'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
@@ -65,6 +68,25 @@ router.post('/outlet-documents', authenticate, uploadSingleToS3('document', 'out
     });
   } catch (error) {
     res.status(500).json({ message: 'Upload failed', error: error.message });
+  }
+});
+
+// Generate presigned URL for viewing a file (protected)
+router.post('/presigned-url', authenticate, async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ message: 'URL is required' });
+
+    // Extract S3 key from the URL
+    const key = extractKeyFromUrl(url);
+    if (!key) return res.status(400).json({ message: 'Invalid S3 URL' });
+
+    const command = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); // 5 min
+
+    res.json({ url: presignedUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to generate presigned URL', error: error.message });
   }
 });
 

@@ -20,6 +20,14 @@ const OutletManagement = () => {
   const [qrCode, setQrCode] = useState(null);
   const [generating, setGenerating] = useState(false);
 
+  // Documents Modal State
+  const [docsModalOpen, setDocsModalOpen] = useState(false);
+  const [docsOutlet, setDocsOutlet] = useState(null);
+  const [docFiles, setDocFiles] = useState({ rentAgreement: null, fssaiLicense: null, otherDocs: [] });
+  const [existingDocs, setExistingDocs] = useState({ rentAgreement: null, fssaiLicense: null, otherDocs: [] });
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+  const [docsError, setDocsError] = useState('');
+
   useEffect(() => {
     fetchOutlets();
   }, []);
@@ -93,6 +101,74 @@ const OutletManagement = () => {
     document.body.removeChild(link);
   };
 
+  const openDocsModal = async (outlet) => {
+    setDocsOutlet(outlet);
+    setDocFiles({ rentAgreement: null, fssaiLicense: null, otherDocs: [] });
+    setDocsError('');
+    setExistingDocs(outlet.documents || { rentAgreement: null, fssaiLicense: null, otherDocs: [] });
+    setDocsModalOpen(true);
+  };
+
+  const handleDocFileChange = (field, files) => {
+    if (field === 'otherDocs') {
+      setDocFiles(prev => ({ ...prev, otherDocs: Array.from(files) }));
+    } else {
+      setDocFiles(prev => ({ ...prev, [field]: files[0] }));
+    }
+  };
+
+  const handleUploadDocs = async () => {
+    if (!docsOutlet) return;
+    setUploadingDocs(true);
+    setDocsError('');
+
+    try {
+      const documents = { ...existingDocs };
+
+      if (docFiles.rentAgreement instanceof File) {
+        const fd = new FormData();
+        fd.append('document', docFiles.rentAgreement);
+        const res = await api.post('/upload/outlet-documents', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        documents.rentAgreement = res.data.url;
+      }
+
+      if (docFiles.fssaiLicense instanceof File) {
+        const fd = new FormData();
+        fd.append('document', docFiles.fssaiLicense);
+        const res = await api.post('/upload/outlet-documents', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        documents.fssaiLicense = res.data.url;
+      }
+
+      if (docFiles.otherDocs.length > 0) {
+        const newUrls = await Promise.all(
+          docFiles.otherDocs.map(async (file) => {
+            const fd = new FormData();
+            fd.append('document', file);
+            const res = await api.post('/upload/outlet-documents', fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return res.data.url;
+          })
+        );
+        documents.otherDocs = [...(existingDocs.otherDocs || []), ...newUrls];
+      }
+
+      await api.put(`/outlets/${docsOutlet._id}`, { documents });
+      setOutlets(outlets.map(o => o._id === docsOutlet._id ? { ...o, documents } : o));
+      setExistingDocs(documents);
+      setDocFiles({ rentAgreement: null, fssaiLicense: null, otherDocs: [] });
+      alert('Documents saved successfully!');
+    } catch (err) {
+      setDocsError(err.response?.data?.message || 'Failed to upload documents');
+    } finally {
+      setUploadingDocs(false);
+    }
+  };
+
   const filteredOutlets = outlets.filter(outlet =>
     outlet.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     outlet.outletId?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -145,6 +221,7 @@ const OutletManagement = () => {
                 <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                   <th className="px-8 py-4">Outlet Name</th>
                   <th className="px-8 py-4">Outlet ID</th>
+                  <th className="px-8 py-4">Rating</th>
                   <th className="px-8 py-4">Today Sales</th>
                   <th className="px-8 py-4">Monthly Sales</th>
                   <th className="px-8 py-4">Ordering Link</th>
@@ -154,7 +231,7 @@ const OutletManagement = () => {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredOutlets.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-8 py-12 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan="7" className="px-8 py-12 text-center text-slate-500 dark:text-slate-400">
                       No outlets found
                     </td>
                   </tr>
@@ -176,6 +253,31 @@ const OutletManagement = () => {
                         <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                           {outlet.outletId}
                         </span>
+                      </td>
+                      <td className="px-8 py-5">
+                        {outlet.rating > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <span
+                                  key={star}
+                                  className={`material-icons-outlined text-base ${
+                                    star <= Math.round(outlet.rating)
+                                      ? 'text-yellow-400'
+                                      : 'text-slate-200 dark:text-slate-700'
+                                  }`}
+                                >
+                                  star
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              {Number(outlet.rating).toFixed(1)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-600">No rating</span>
+                        )}
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -232,18 +334,28 @@ const OutletManagement = () => {
                           <button
                             className="p-2 text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
                             onClick={() => navigate(`/outlets/view/${outlet._id}`)}
+                            title="View outlet"
                           >
                             <span className="material-icons-outlined">visibility</span>
                           </button>
                           <button
                             className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                             onClick={() => navigate(`/outlets/edit/${outlet._id}`)}
+                            title="Edit outlet"
                           >
                             <span className="material-icons-outlined">edit</span>
                           </button>
                           <button
+                            className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                            onClick={() => openDocsModal(outlet)}
+                            title="Upload documents"
+                          >
+                            <span className="material-icons-outlined">description</span>
+                          </button>
+                          <button
                             className="p-2 text-slate-400 hover:text-red-500 transition-colors"
                             onClick={() => handleDelete(outlet._id)}
+                            title="Delete outlet"
                           >
                             <span className="material-icons-outlined">delete</span>
                           </button>
@@ -359,6 +471,167 @@ const OutletManagement = () => {
           >
             <span className="material-icons-outlined text-lg">download</span>
             Download QR Code
+          </Button>
+        </div>
+      </Modal>
+      {/* Documents Modal */}
+      <Modal
+        isOpen={docsModalOpen}
+        onClose={() => setDocsModalOpen(false)}
+        title={`Documents - ${docsOutlet?.name}`}
+        size="md"
+      >
+        <div className="space-y-5">
+          {docsError && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+              {docsError}
+            </div>
+          )}
+
+          {/* Rent Agreement */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Rent Agreement</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {docFiles.rentAgreement
+                    ? docFiles.rentAgreement.name
+                    : existingDocs.rentAgreement
+                      ? 'Uploaded ✓'
+                      : 'No file uploaded'}
+                </p>
+              </div>
+              <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase font-bold">Required</span>
+            </div>
+            <label className="group cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-4 hover:border-primary hover:bg-orange-50 dark:hover:bg-primary/5 transition-all">
+              <span className="material-icons-outlined text-slate-400 group-hover:text-primary text-lg">upload_file</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {existingDocs.rentAgreement ? 'Replace file' : 'Click to upload'}
+              </span>
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={(e) => handleDocFileChange('rentAgreement', e.target.files)}
+              />
+            </label>
+          </div>
+
+          {/* FSSAI License */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">FSSAI License</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {docFiles.fssaiLicense
+                    ? docFiles.fssaiLicense.name
+                    : existingDocs.fssaiLicense
+                      ? 'Uploaded ✓'
+                      : 'No file uploaded'}
+                </p>
+              </div>
+              <span className="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase font-bold">Required</span>
+            </div>
+            <label className="group cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-4 hover:border-primary hover:bg-orange-50 dark:hover:bg-primary/5 transition-all">
+              <span className="material-icons-outlined text-slate-400 group-hover:text-primary text-lg">upload_file</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {existingDocs.fssaiLicense ? 'Replace file' : 'Click to upload'}
+              </span>
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={(e) => handleDocFileChange('fssaiLicense', e.target.files)}
+              />
+            </label>
+          </div>
+
+          {/* Other Documents */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Other Documents</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {docFiles.otherDocs.length > 0
+                    ? `${docFiles.otherDocs.length} file(s) selected`
+                    : `${existingDocs.otherDocs?.length || 0} file(s) uploaded`}
+                </p>
+              </div>
+            </div>
+            <label className="group cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-4 hover:border-primary hover:bg-orange-50 dark:hover:bg-primary/5 transition-all">
+              <span className="material-icons-outlined text-slate-400 group-hover:text-primary text-lg">upload_file</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">Click to upload (multiple)</span>
+              <input
+                type="file"
+                className="hidden"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={(e) => handleDocFileChange('otherDocs', e.target.files)}
+              />
+            </label>
+            {docFiles.otherDocs.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {docFiles.otherDocs.map((f, i) => (
+                  <li key={i} className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <span className="material-icons-outlined text-sm text-primary">insert_drive_file</span>
+                    {f.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* View existing docs */}
+          {(existingDocs.rentAgreement || existingDocs.fssaiLicense || existingDocs.otherDocs?.length > 0) && (
+            <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/30">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Existing Documents</p>
+              <div className="flex flex-wrap gap-2">
+                {existingDocs.rentAgreement && (
+                  <a
+                    href={existingDocs.rentAgreement}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-lg"
+                  >
+                    <span className="material-icons-outlined text-sm">description</span>
+                    Rent Agreement
+                  </a>
+                )}
+                {existingDocs.fssaiLicense && (
+                  <a
+                    href={existingDocs.fssaiLicense}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-lg"
+                  >
+                    <span className="material-icons-outlined text-sm">verified</span>
+                    FSSAI License
+                  </a>
+                )}
+                {existingDocs.otherDocs?.map((url, i) => (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-xs text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-lg"
+                  >
+                    <span className="material-icons-outlined text-sm">attach_file</span>
+                    Doc {i + 1}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleUploadDocs}
+            className="w-full"
+            loading={uploadingDocs}
+            disabled={!docFiles.rentAgreement && !docFiles.fssaiLicense && docFiles.otherDocs.length === 0}
+          >
+            <span className="material-icons-outlined text-lg">cloud_upload</span>
+            Save Documents
           </Button>
         </div>
       </Modal>

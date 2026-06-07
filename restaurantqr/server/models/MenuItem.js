@@ -64,6 +64,12 @@ const menuItemSchema = new mongoose.Schema(
         enum: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       },
     ],
+    timeSlots: [
+      {
+        start: { type: String }, // 'HH:MM'
+        end: { type: String },   // 'HH:MM'
+      },
+    ],
     stockType: {
       type: String,
       enum: ['Unlimited', 'Limited per day'],

@@ -145,22 +145,30 @@ const AddOutlet = () => {
         logoUrl = uploadResponse.data.url;
       }
 
-      // Handle document uploads
+      // Handle document uploads via S3
+      const fileToBase64 = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
       const documents = { ...formData.documents };
 
       if (formData.documents.rentAgreement instanceof File) {
-        const fileData = new FormData();
-        fileData.append('document', formData.documents.rentAgreement);
-        const res = await api.post('/upload/outlet-documents', fileData, {
+        const fd = new FormData();
+        fd.append('document', formData.documents.rentAgreement);
+        const res = await api.post('/upload/outlet-documents', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         documents.rentAgreement = res.data.url;
       }
 
       if (formData.documents.fssaiLicense instanceof File) {
-        const fileData = new FormData();
-        fileData.append('document', formData.documents.fssaiLicense);
-        const res = await api.post('/upload/outlet-documents', fileData, {
+        const fd = new FormData();
+        fd.append('document', formData.documents.fssaiLicense);
+        const res = await api.post('/upload/outlet-documents', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         documents.fssaiLicense = res.data.url;
@@ -168,20 +176,19 @@ const AddOutlet = () => {
 
       // Other docs (multiple)
       if (Array.isArray(formData.documents.otherDocs)) {
-        const otherDocsUrls = [];
-        for (const file of formData.documents.otherDocs) {
-          if (file instanceof File) {
-            const fileData = new FormData();
-            fileData.append('document', file);
-            const res = await api.post('/upload/outlet-documents', fileData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            otherDocsUrls.push(res.data.url);
-          } else if (typeof file === 'string') {
-            otherDocsUrls.push(file);
-          }
-        }
-        documents.otherDocs = otherDocsUrls;
+        documents.otherDocs = await Promise.all(
+          formData.documents.otherDocs.map(async (file) => {
+            if (file instanceof File) {
+              const fd = new FormData();
+              fd.append('document', file);
+              const res = await api.post('/upload/outlet-documents', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+              return res.data.url;
+            }
+            return file;
+          })
+        );
       }
 
       // Prepare outlet data for API
@@ -464,10 +471,13 @@ const AddOutlet = () => {
                 </div>
                 <label className="group cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-8 hover:border-primary hover:bg-orange-50 dark:hover:bg-primary/5 transition-all">
                   <span className="material-icons-outlined text-slate-400 group-hover:text-primary mb-2">upload</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Click to upload</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {formData.documents.rentAgreement ? formData.documents.rentAgreement.name : 'Click to upload'}
+                  </span>
                   <input
                     type="file"
                     className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={(e) => handleFileChange('rentAgreement', e.target.files[0])}
                   />
                 </label>
@@ -481,10 +491,13 @@ const AddOutlet = () => {
                 </div>
                 <label className="group cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg py-8 hover:border-primary hover:bg-orange-50 dark:hover:bg-primary/5 transition-all">
                   <span className="material-icons-outlined text-slate-400 group-hover:text-primary mb-2">upload</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Click to upload</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {formData.documents.fssaiLicense ? formData.documents.fssaiLicense.name : 'Click to upload'}
+                  </span>
                   <input
                     type="file"
                     className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={(e) => handleFileChange('fssaiLicense', e.target.files[0])}
                   />
                 </label>
