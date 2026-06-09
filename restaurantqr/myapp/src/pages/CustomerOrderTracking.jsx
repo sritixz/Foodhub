@@ -13,6 +13,7 @@ const PAYMENT_ICONS = {
   card: 'credit_card',
   netbanking: 'account_balance',
   cash: 'payments',
+  cod: 'local_shipping',
 };
 
 const StatusStep = ({ step, index, total, timelineMap }) => {
@@ -317,6 +318,7 @@ const CustomerOrderTracking = () => {
     card: 'Card',
     netbanking: 'Net Banking',
     cash: 'Cash',
+    cod: 'Pay on Delivery',
   };
 
   if (loading) {

@@ -29,6 +29,7 @@ const QRMenu = () => {
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [isBulkOrder, setIsBulkOrder] = useState(false);
   const [bulkDetails, setBulkDetails] = useState({ companyName: '', headCount: '', eventName: '' });
+  const [multiplyByHeadCount, setMultiplyByHeadCount] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [orderDetails, setOrderDetails] = useState({
@@ -180,10 +181,14 @@ const QRMenu = () => {
     setShowPaymentModal(false);
 
     try {
-      const totalAmount = cart.reduce((sum, item) => {
+      const baseAmount = cart.reduce((sum, item) => {
         const itemPrice = item.variantPrice || item.menuItem?.basePrice || 0;
         return sum + (itemPrice * item.quantity);
       }, 0);
+      const headCount = parseInt(bulkDetails.headCount) || 0;
+      const totalAmount = (isBulkOrder && multiplyByHeadCount && headCount > 1)
+        ? baseAmount * headCount
+        : baseAmount;
 
       const deliveryMode = orderDetails.deliveryMode || (
         orderDetails.deliveryAddress
@@ -217,7 +222,7 @@ const QRMenu = () => {
         },
         amount: totalAmount,
         paymentMethod: selectedPaymentMethod,
-        paymentStatus: selectedPaymentMethod === 'cash' ? 'Pending' : 'Paid',
+        paymentStatus: ['cash', 'cod'].includes(selectedPaymentMethod) ? 'Pending' : 'Paid',
         status: 'New',
       };
 
@@ -241,10 +246,17 @@ const QRMenu = () => {
     }
   };
 
-  const cartTotal = cart.reduce((sum, item) => {
-    const itemPrice = item.variantPrice || item.menuItem?.basePrice || 0;
-    return sum + (itemPrice * item.quantity);
-  }, 0);
+  const cartTotal = (() => {
+    const baseTotal = cart.reduce((sum, item) => {
+      const itemPrice = item.variantPrice || item.menuItem?.basePrice || 0;
+      return sum + (itemPrice * item.quantity);
+    }, 0);
+    const headCount = parseInt(bulkDetails.headCount) || 0;
+    if (isBulkOrder && multiplyByHeadCount && headCount > 1) {
+      return baseTotal * headCount;
+    }
+    return baseTotal;
+  })();
 
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -351,15 +363,15 @@ const QRMenu = () => {
 
           {/* Desktop Sidebar Cart */}
           <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-44">
+            <div className="sticky top-44 max-h-[calc(100vh-12rem)] overflow-y-auto space-y-6">
               <Cart
                 items={cart}
                 onUpdateQuantity={handleUpdateQuantity}
                 onRemoveItem={handleRemoveItem}
-                className="shadow-xl rounded-2xl border-2 border-slate-100 mb-6"
+                className="shadow-xl rounded-2xl border-2 border-slate-100"
               />
               {cart.length > 0 && (
-                <div className="mt-6 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 p-6 shadow-xl">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 p-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-6">
                     <span className="material-icons-outlined text-primary">receipt_long</span>
                     <h3 className="font-black text-sm uppercase tracking-widest text-slate-700">Order Summary</h3>
@@ -415,6 +427,24 @@ const QRMenu = () => {
                           onChange={(e) => setBulkDetails({ ...bulkDetails, headCount: e.target.value })}
                           className="text-sm"
                         />
+                        {bulkDetails.headCount && parseInt(bulkDetails.headCount) > 1 && (
+                          <div className="flex items-center justify-between p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <div className="flex items-center gap-2">
+                              <span className="material-icons-outlined text-amber-600 text-base">close_fullscreen</span>
+                              <div>
+                                <p className="font-bold text-[11px] text-amber-800 dark:text-amber-200 uppercase tracking-wide">Multiply by Head Count</p>
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400">Total = items × {bulkDetails.headCount} people</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setMultiplyByHeadCount(!multiplyByHeadCount)}
+                              className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${multiplyByHeadCount ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                            >
+                              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${multiplyByHeadCount ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
+                        )}
                         <Input
                           label="Event Name (optional)"
                           placeholder="e.g. Team Lunch"
@@ -550,6 +580,24 @@ const QRMenu = () => {
                         onChange={(e) => setBulkDetails({ ...bulkDetails, headCount: e.target.value })}
                         className="text-sm"
                       />
+                      {bulkDetails.headCount && parseInt(bulkDetails.headCount) > 1 && (
+                        <div className="flex items-center justify-between p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <div className="flex items-center gap-2">
+                            <span className="material-icons-outlined text-amber-600 text-base">close_fullscreen</span>
+                            <div>
+                              <p className="font-bold text-[11px] text-amber-800 dark:text-amber-200 uppercase tracking-wide">Multiply by Head Count</p>
+                              <p className="text-[10px] text-amber-600 dark:text-amber-400">Total = items × {bulkDetails.headCount} people</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setMultiplyByHeadCount(!multiplyByHeadCount)}
+                            className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${multiplyByHeadCount ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${multiplyByHeadCount ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                          </button>
+                        </div>
+                      )}
                       <Input
                         label="Event Name (optional)"
                         placeholder="e.g. Team Lunch"
@@ -610,6 +658,7 @@ const QRMenu = () => {
                 { id: 'card', label: 'Card', icon: 'credit_card', desc: 'Debit or Credit card' },
                 { id: 'netbanking', label: 'Net Banking', icon: 'account_balance', desc: 'Internet banking' },
                 { id: 'cash', label: 'Cash', icon: 'payments', desc: 'Pay at counter' },
+                { id: 'cod', label: 'Pay on Delivery', icon: 'local_shipping', desc: 'Cash/UPI at delivery' },
               ].map(method => (
                 <button
                   key={method.id}

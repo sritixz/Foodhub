@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 import Layout from '../components/Layout/Layout';
 import MenuItemCard from '../components/MenuItemCard';
 import Cart from '../components/Cart';
@@ -10,6 +11,12 @@ import Card from '../components/UI/Card';
 import Modal from '../components/UI/Modal';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+// Public API — no auth required, used for order placement (guests & bulk orders)
+const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  headers: { 'Content-Type': 'application/json' },
+});
 
 const OrderPlacement = () => {
   const navigate = useNavigate();
@@ -28,6 +35,11 @@ const OrderPlacement = () => {
   const [selectedFoodType, setSelectedFoodType] = useState('All');
   const [errors, setErrors] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [isBulkOrder, setIsBulkOrder] = useState(false);
+  const [bulkDetails, setBulkDetails] = useState({ companyName: '', headCount: '', eventName: '' });
+  const [multiplyByHeadCount, setMultiplyByHeadCount] = useState(false);
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [variantItem, setVariantItem] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -156,10 +168,15 @@ const OrderPlacement = () => {
   };
 
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => {
+    const cartTotal = cart.reduce((sum, item) => {
       const itemPrice = item.variantPrice || item.menuItem?.basePrice || 0;
       return sum + (itemPrice * item.quantity);
     }, 0);
+    const headCount = parseInt(bulkDetails.headCount) || 0;
+    if (isBulkOrder && multiplyByHeadCount && headCount > 1) {
+      return cartTotal * headCount;
+    }
+    return cartTotal;
   };
 
   const validateOrder = () => {
@@ -186,6 +203,13 @@ const OrderPlacement = () => {
 
   const handleCheckout = () => {
     if (!validateOrder()) return;
+    setSelectedPaymentMethod('');
+    setShowPaymentModal(true);
+  };
+
+  const handleConfirmPayment = (method) => {
+    setSelectedPaymentMethod(method);
+    setShowPaymentModal(false);
     setShowConfirmModal(true);
   };
 
@@ -200,16 +224,26 @@ const OrderPlacement = () => {
         ? orderDetails.deliveryMode || (orderDetails.deliveryAddress ? 'Delivery' : 'Dine-in')
         : orderDetails.deliveryMode || 'Delivery';
 
-      const orderType = orderDetails.orderType === 'QR' ? 'QR' : 'Retail';
+      const orderType = isBulkOrder ? 'Bulk' : (orderDetails.orderType === 'QR' ? 'QR' : 'Retail');
 
       const customerData = user ? {
         name: user.name || 'Guest',
         email: user.email || null,
         phone: user.phone || null,
+        ...(isBulkOrder && {
+          companyName: bulkDetails.companyName,
+          headCount: bulkDetails.headCount,
+          eventName: bulkDetails.eventName,
+        }),
       } : {
         name: 'Guest',
         email: null,
         phone: null,
+        ...(isBulkOrder && {
+          companyName: bulkDetails.companyName,
+          headCount: bulkDetails.headCount,
+          eventName: bulkDetails.eventName,
+        }),
       };
 
       const orderData = {
@@ -221,16 +255,33 @@ const OrderPlacement = () => {
           price: item.variantPrice || item.menuItem.basePrice,
         })),
         orderType,
+        isBulk: isBulkOrder,
         deliveryMode,
         deliveryAddress: orderDetails.deliveryAddress || null,
         notes: orderDetails.deliveryNotes || null,
         scheduledTime: orderDetails.scheduledTime || null,
         customer: customerData,
         amount: totalAmount,
+        paymentMethod: selectedPaymentMethod || null,
+        paymentStatus: ['cash', 'cod'].includes(selectedPaymentMethod) ? 'Pending' : (selectedPaymentMethod ? 'Paid' : 'Pending'),
         status: 'New',
       };
 
-      const response = await api.post('/orders', orderData);
+      // Use publicApi so guests (non-authenticated) can also place orders
+      const response = await publicApi.post('/orders', orderData);
+
+      // Fire payment notification (non-critical)
+      if (selectedPaymentMethod) {
+        try {
+          await publicApi.post(`/orders/${response.data._id}/payment-notification`, {
+            paymentMethod: selectedPaymentMethod,
+            amount: totalAmount,
+          });
+        } catch {
+          // non-critical
+        }
+      }
+
       setShowConfirmModal(false);
       navigate(`/orders/track/${response.data._id}`);
     } catch (error) {
@@ -336,6 +387,69 @@ const OrderPlacement = () => {
               <Card className="mt-6">
                 <h3 className="font-bold mb-4">Order Details</h3>
                 <div className="space-y-4">
+                  {/* Bulk Order Toggle */}
+                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                    <div className="flex items-center gap-2">
+                      <span className="material-icons-outlined text-blue-600 text-lg">inventory</span>
+                      <div>
+                        <p className="font-bold text-xs text-blue-800 dark:text-blue-200 uppercase tracking-wide">Bulk Order</p>
+                        <p className="text-[10px] text-blue-500">For events / companies</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkOrder(!isBulkOrder)}
+                      className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${isBulkOrder ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                    >
+                      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform mt-0.5 ${isBulkOrder ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+
+                  {isBulkOrder && (
+                    <div className="space-y-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                      <Input
+                        label="Company / Org Name"
+                        placeholder="e.g. Acme Corp"
+                        value={bulkDetails.companyName}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, companyName: e.target.value })}
+                        className="text-sm"
+                      />
+                      <Input
+                        label="Head Count"
+                        type="number"
+                        placeholder="Number of people"
+                        value={bulkDetails.headCount}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, headCount: e.target.value })}
+                        className="text-sm"
+                      />
+                      {bulkDetails.headCount && parseInt(bulkDetails.headCount) > 1 && (
+                        <div className="flex items-center justify-between p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <div className="flex items-center gap-2">
+                            <span className="material-icons-outlined text-amber-600 text-base">close_fullscreen</span>
+                            <div>
+                              <p className="font-bold text-[11px] text-amber-800 dark:text-amber-200 uppercase tracking-wide">Multiply by Head Count</p>
+                              <p className="text-[10px] text-amber-600 dark:text-amber-400">Total = items × {bulkDetails.headCount} people</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setMultiplyByHeadCount(!multiplyByHeadCount)}
+                            className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${multiplyByHeadCount ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${multiplyByHeadCount ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                          </button>
+                        </div>
+                      )}
+                      <Input
+                        label="Event Name (optional)"
+                        placeholder="e.g. Team Lunch"
+                        value={bulkDetails.eventName}
+                        onChange={(e) => setBulkDetails({ ...bulkDetails, eventName: e.target.value })}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
+
                   <Select
                     label="Delivery Mode"
                     value={orderDetails.deliveryMode}
@@ -460,6 +574,34 @@ const OrderPlacement = () => {
             <span className="text-xl font-bold text-primary">₹{calculateTotal().toFixed(2)}</span>
           </div>
 
+          {/* Payment Method */}
+          {selectedPaymentMethod && (
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <span className="material-icons-outlined text-green-600 text-sm">
+                  {selectedPaymentMethod === 'upi' ? 'account_balance_wallet' :
+                   selectedPaymentMethod === 'card' ? 'credit_card' :
+                   selectedPaymentMethod === 'netbanking' ? 'account_balance' :
+                   selectedPaymentMethod === 'cod' ? 'local_shipping' : 'payments'}
+                </span>
+                <span className="text-sm font-medium text-green-800 dark:text-green-300">
+                  Payment via {selectedPaymentMethod === 'upi' ? 'UPI' : selectedPaymentMethod === 'card' ? 'Card' : selectedPaymentMethod === 'netbanking' ? 'Net Banking' : selectedPaymentMethod === 'cod' ? 'Pay on Delivery' : 'Cash'}
+                </span>
+              </div>
+              <button onClick={() => { setShowConfirmModal(false); setShowPaymentModal(true); }} className="text-xs text-green-600 underline">Change</button>
+            </div>
+          )}
+
+          {isBulkOrder && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <span className="material-icons-outlined text-blue-600 text-sm">inventory</span>
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                Bulk Order{bulkDetails.companyName ? ` — ${bulkDetails.companyName}` : ''}
+                {bulkDetails.headCount ? ` (${bulkDetails.headCount} people)` : ''}
+              </span>
+            </div>
+          )}
+
           {/* Error */}
           {errors.submit && (
             <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -564,6 +706,57 @@ const OrderPlacement = () => {
           </div>
         )}
       </Modal>
+
+      {/* Payment Method Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowPaymentModal(false)} />
+          <div className="relative z-10 bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-lg text-slate-900 dark:text-white">Choose Payment Method</h2>
+              <button onClick={() => setShowPaymentModal(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                <span className="material-icons-outlined text-sm">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {[
+                { id: 'upi', label: 'UPI', icon: 'account_balance_wallet', desc: 'GPay, PhonePe, Paytm' },
+                { id: 'card', label: 'Card', icon: 'credit_card', desc: 'Debit or Credit card' },
+                { id: 'netbanking', label: 'Net Banking', icon: 'account_balance', desc: 'Internet banking' },
+                { id: 'cash', label: 'Cash', icon: 'payments', desc: 'Pay at counter' },
+                { id: 'cod', label: 'Pay on Delivery', icon: 'local_shipping', desc: 'Cash/UPI at delivery' },
+              ].map(method => (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedPaymentMethod(method.id)}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    selectedPaymentMethod === method.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className={`material-icons-outlined text-2xl mb-1 block ${selectedPaymentMethod === method.id ? 'text-primary' : 'text-slate-400'}`}>
+                    {method.icon}
+                  </span>
+                  <p className={`font-bold text-sm ${selectedPaymentMethod === method.id ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{method.label}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{method.desc}</p>
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between mb-4">
+              <span className="text-sm text-slate-500">Total</span>
+              <span className="font-bold text-xl text-primary">₹{calculateTotal().toFixed(2)}</span>
+            </div>
+            <button
+              onClick={() => selectedPaymentMethod && handleConfirmPayment(selectedPaymentMethod)}
+              disabled={!selectedPaymentMethod}
+              className="w-full py-4 bg-primary text-white font-bold text-base rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all disabled:opacity-50"
+            >
+              Confirm & Review Order
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

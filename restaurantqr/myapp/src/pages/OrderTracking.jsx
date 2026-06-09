@@ -357,6 +357,27 @@ const OrderTracking = () => {
           <Card>
             <h3 className="font-bold mb-4">Delivery Information</h3>
             <div className="space-y-3">
+              {order.paymentMethod && (
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Payment Method</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="material-icons-outlined text-base text-primary">
+                      {order.paymentMethod === 'upi' ? 'account_balance_wallet' :
+                       order.paymentMethod === 'card' ? 'credit_card' :
+                       order.paymentMethod === 'netbanking' ? 'account_balance' :
+                       order.paymentMethod === 'cod' ? 'local_shipping' : 'payments'}
+                    </span>
+                    <span className="font-medium capitalize">
+                      {order.paymentMethod === 'upi' ? 'UPI' : order.paymentMethod === 'netbanking' ? 'Net Banking' : order.paymentMethod === 'cod' ? 'Pay on Delivery' : order.paymentMethod}
+                    </span>
+                    {order.paymentStatus && (
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
+                        {order.paymentStatus}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               {order.assignedTo && (
                 <div>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Delivery Person</p>

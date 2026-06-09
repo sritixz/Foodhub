@@ -41,6 +41,18 @@ const orderSchema = new mongoose.Schema(
         type: String,
         default: null,
       },
+      companyName: {
+        type: String,
+        default: null,
+      },
+      headCount: {
+        type: String,
+        default: null,
+      },
+      eventName: {
+        type: String,
+        default: null,
+      },
     },
     orderType: {
       type: String,
@@ -61,6 +73,20 @@ const orderSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
+    },
+    isBulk: {
+      type: Boolean,
+      default: false,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['upi', 'card', 'netbanking', 'cash', 'cod', null],
+      default: null,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Paid', 'Failed', null],
+      default: null,
     },
     status: {
       type: String,
@@ -100,6 +126,10 @@ const orderSchema = new mongoose.Schema(
         setBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
       },
     ],
+    customerRating: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,

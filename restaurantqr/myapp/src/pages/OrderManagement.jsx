@@ -367,6 +367,9 @@ const OrderManagement = () => {
                   Amount
                 </th>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Payment
+                </th>
+                <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -380,7 +383,7 @@ const OrderManagement = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan="10" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     No orders found
                   </td>
                 </tr>
@@ -425,6 +428,26 @@ const OrderManagement = () => {
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-white">
                         ₹{totalAmount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {order.paymentMethod ? (
+                          <span className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400">
+                            <span className="material-icons-outlined text-[14px]">
+                              {order.paymentMethod === 'upi' ? 'account_balance_wallet' :
+                               order.paymentMethod === 'card' ? 'credit_card' :
+                               order.paymentMethod === 'netbanking' ? 'account_balance' :
+                               order.paymentMethod === 'cod' ? 'local_shipping' : 'payments'}
+                            </span>
+                            <span className="capitalize">{order.paymentMethod === 'upi' ? 'UPI' : order.paymentMethod === 'netbanking' ? 'Net Banking' : order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}</span>
+                            {order.paymentStatus && (
+                              <span className={`ml-1 text-[10px] font-bold ${order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-yellow-600'}`}>
+                                ({order.paymentStatus})
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span

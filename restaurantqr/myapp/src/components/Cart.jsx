@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from './UI/Button';
 import Card from './UI/Card';
 
-const Cart = ({ items = [], onUpdateQuantity, onRemoveItem, onCheckout, onClear }) => {
+const Cart = ({ items = [], onUpdateQuantity, onRemoveItem, onCheckout, onClear, className }) => {
   const calculateTotal = () => {
     return items.reduce((total, item) => {
       const itemPrice = item.variantPrice || item.menuItem?.basePrice || 0;
@@ -13,7 +13,7 @@ const Cart = ({ items = [], onUpdateQuantity, onRemoveItem, onCheckout, onClear 
   const total = calculateTotal();
 
   return (
-    <Card className="sticky top-6">
+    <Card className={className || "sticky top-6"}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">Cart</h2>
         {items.length > 0 && onClear && (

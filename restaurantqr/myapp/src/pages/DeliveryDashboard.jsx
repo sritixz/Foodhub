@@ -178,6 +178,26 @@ const OrderRow = ({ order, userRole, onStatusUpdate }) => {
         </span>
       </td>
 
+      {/* Payment - collect or already paid */}
+      <td className="px-6 py-4">
+        {order.paymentStatus === 'Paid' ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <span className="material-icons-outlined text-[12px]">check_circle</span>
+            Paid
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+            <span className="material-icons-outlined text-[12px]">payments</span>
+            Collect ₹{total.toFixed(0)}
+          </span>
+        )}
+        {order.paymentMethod && (
+          <p className="text-[10px] text-slate-400 mt-1 capitalize">
+            {order.paymentMethod === 'upi' ? 'UPI' : order.paymentMethod === 'netbanking' ? 'Net Banking' : order.paymentMethod === 'cod' ? 'COD' : order.paymentMethod}
+          </p>
+        )}
+      </td>
+
       {/* Actions */}
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-2">
@@ -284,6 +304,7 @@ const DeliveryDashboard = () => {
         <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Address</th>
         <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned To</th>
         <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+        <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment</th>
         <th className="px-6 py-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
       </tr>
     </thead>
@@ -323,7 +344,7 @@ const DeliveryDashboard = () => {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {activeOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                       <span className="material-icons-outlined text-4xl mb-2 opacity-20 block">local_shipping</span>
                       {user?.role === 'Delivery Staff' ? 'No active deliveries assigned to you' : 'No active delivery orders'}
                     </td>

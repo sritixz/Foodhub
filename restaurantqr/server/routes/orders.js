@@ -145,11 +145,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create order (including QR code orders) - Public for QR orders, protected for others
+// Create order (including QR code orders) - Public for QR/Bulk/Retail orders
 router.post('/', async (req, res) => {
-  // If it's a QR order, allow without auth, otherwise require auth
-  if (req.body.orderType !== 'QR' && !req.header('Authorization')) {
-    return res.status(401).json({ message: 'Authentication required for non-QR orders' });
+  // Allow QR, Bulk, and Retail orders without authentication (customer-facing ordering)
+  const publicOrderTypes = ['QR', 'Bulk', 'Retail'];
+  if (!publicOrderTypes.includes(req.body.orderType) && !req.header('Authorization')) {
+    return res.status(401).json({ message: 'Authentication required' });
   }
   
   // If auth token provided, verify it
@@ -164,8 +165,8 @@ router.post('/', async (req, res) => {
         req.user = user;
       }
     } catch (error) {
-      // If token invalid but it's a QR order, allow it
-      if (req.body.orderType !== 'QR') {
+      // If token invalid but it's a public order type, allow it
+      if (!publicOrderTypes.includes(req.body.orderType)) {
         return res.status(401).json({ message: 'Invalid token' });
       }
     }
@@ -374,53 +375,6 @@ router.patch('/:id/assign', authenticate, async (req, res) => {
   }
 });
 
-// Cancel order (protected - Customer/Vendor/Admin)
-router.patch('/:id/cancel', authenticate, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    // Check if order can be cancelled (not already delivered or cancelled)
-    if (order.status === 'Delivered' || order.status === 'Cancelled') {
-      return res.status(400).json({ message: 'Order cannot be cancelled' });
-    }
-
-    // Check permissions: Customer can cancel their own orders, Vendor can cancel their orders, Admin can cancel any
-    const isCustomer = order.customer?.email === req.user.email;
-    const isVendor = order.vendor.toString() === req.user.outlet?.toString();
-    const isAdmin = ['Admin', 'Company Admin'].includes(req.user.role);
-
-    if (!isCustomer && !isVendor && !isAdmin) {
-      return res.status(403).json({ message: 'You do not have permission to cancel this order' });
-    }
-
-    order.status = 'Cancelled';
-    await order.save();
-
-    const populatedOrder = await Order.findById(order._id)
-      .populate('vendor', 'name outletId')
-      .populate('items.menuItem', 'name image basePrice')
-      .populate('assignedTo', 'name phone');
-
-    broadcastOrderUpdate(populatedOrder);
-    const vendorUsers = await User.find({ role: 'Vendor', outlet: populatedOrder.vendor?._id });
-    const adminUsers = await User.find({ role: { $in: ['Admin', 'Company Admin'] } });
-    await createNotifications({
-      users: [...vendorUsers, ...adminUsers],
-      title: 'Order Cancelled',
-      message: `Order ${populatedOrder.orderId} was cancelled.`,
-      type: 'order',
-      relatedId: populatedOrder._id,
-      relatedModel: 'Order',
-    });
-    res.json(populatedOrder);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
 // Vendor accept order (protected - Vendor only)
 router.patch('/:id/accept', authenticate, async (req, res) => {
   try {
@@ -527,6 +481,87 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
     res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Payment notification — public, called after customer completes payment
+router.post('/:id/payment-notification', async (req, res) => {
+  try {
+    const { paymentMethod, amount } = req.body;
+
+    const order = await Order.findById(req.params.id)
+      .populate('vendor', 'name outletId');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Update payment fields on the order
+    if (paymentMethod) {
+      order.paymentMethod = paymentMethod;
+      order.paymentStatus = ['cash', 'cod'].includes(paymentMethod) ? 'Pending' : 'Paid';
+      await order.save();
+    }
+
+    const methodLabels = { upi: 'UPI', card: 'Card', netbanking: 'Net Banking', cash: 'Cash', cod: 'Pay on Delivery' };
+    const methodLabel = methodLabels[paymentMethod] || paymentMethod;
+    const amountStr = amount ? `₹${Number(amount).toLocaleString('en-IN')}` : '';
+    const isPending = ['cash', 'cod'].includes(paymentMethod);
+
+    // Notify vendor and admins
+    const vendorUsers = await User.find({ role: 'Vendor', outlet: order.vendor?._id });
+    const adminUsers = await User.find({ role: { $in: ['Admin', 'Company Admin'] } });
+    await createNotifications({
+      users: [...vendorUsers, ...adminUsers],
+      title: isPending ? 'Payment Pending — Collect on Delivery' : 'Payment Received',
+      message: isPending
+        ? `Order ${order.orderId} of ${amountStr} — payment to be collected via ${methodLabel}.`
+        : `Order ${order.orderId} payment of ${amountStr} completed via ${methodLabel}.`,
+      type: 'payment',
+      relatedId: order._id,
+      relatedModel: 'Order',
+    });
+
+    res.json({ message: 'Payment notification sent' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Cancel order — public for QR/customer-facing orders
+router.patch('/:id/cancel', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (['Delivered', 'Cancelled', 'Preparing', 'Ready', 'Picked', 'In Transit'].includes(order.status)) {
+      return res.status(400).json({ message: 'Order cannot be cancelled at this stage' });
+    }
+
+    order.status = 'Cancelled';
+    await order.save();
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('vendor', 'name outletId')
+      .populate('items.menuItem', 'name image basePrice')
+      .populate('assignedTo', 'name phone');
+
+    broadcastOrderUpdate(populatedOrder);
+    const vendorUsers = await User.find({ role: 'Vendor', outlet: populatedOrder.vendor?._id });
+    const adminUsers = await User.find({ role: { $in: ['Admin', 'Company Admin'] } });
+    await createNotifications({
+      users: [...vendorUsers, ...adminUsers],
+      title: 'Order Cancelled',
+      message: `Order ${populatedOrder.orderId} was cancelled by the customer.`,
+      type: 'order',
+      relatedId: populatedOrder._id,
+      relatedModel: 'Order',
+    });
+    res.json(populatedOrder);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
