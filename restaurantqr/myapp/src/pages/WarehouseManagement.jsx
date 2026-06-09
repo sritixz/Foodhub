@@ -140,7 +140,7 @@ const WarehouseManagement = () => {
   // Sync
   const doSync = async (whId) => {
     setSyncing(true);
-    try{ const r=await api.post(`/warehouse/${whId}/sync`,{note:syncNote||null}); refresh(r.data); setSyncModal({open:false,whId:null}); setSyncNote(''); }
+    try{ const r=await api.post(`/warehouse/${whId}/sync`,{note:syncNote||null}); refresh(r.data); setSyncModal({open:false,whId:null}); setSyncNote(''); await refreshAlerts(); }
     catch(e){ setError(e.response?.data?.message||'Sync failed'); }
     finally{ setSyncing(false); }
   };
@@ -277,7 +277,7 @@ const WarehouseManagement = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {(isVendor||isAdmin) && (
-                      <Button variant="outline" onClick={()=>setSyncModal({open:true,whId:display._id})}>
+                      <Button variant="outline" onClick={()=>setSyncModal({open:true,whId:display._id})} disabled={!display.linkedKitchen}>
                         <span className="material-icons-outlined text-sm">sync</span>Sync Kitchen
                       </Button>
                     )}
@@ -393,9 +393,14 @@ const WarehouseManagement = () => {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-900 dark:text-white">
                               {log.itemsSynced} items synced
+                              {log.itemsAdded>0 && <span className="text-green-600 dark:text-green-400 ml-1">(+{log.itemsAdded} new)</span>}
+                              {log.itemsUpdated>0 && <span className="text-blue-600 dark:text-blue-400 ml-1">({log.itemsUpdated} updated)</span>}
                               {log.note && <span className="font-normal text-slate-500 ml-2">— {log.note}</span>}
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">{log.syncedBy?.name||'System'}{log.syncedBy?.role&&` · ${log.syncedBy.role}`}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {log.syncedBy?.name||'System'}{log.syncedBy?.role&&` · ${log.syncedBy.role}`}
+                              {log.sourceKitchenName && <span className="ml-2">← {log.sourceKitchenName}</span>}
+                            </p>
                           </div>
                           <span className="text-xs text-slate-400 flex-shrink-0">{timeAgo(log.syncedAt)}</span>
                         </div>
@@ -565,20 +570,34 @@ const WarehouseManagement = () => {
       </Modal>
 
       {/* Sync Modal */}
-      <Modal isOpen={syncModal.open} onClose={()=>{setSyncModal({open:false,whId:null});setSyncNote('');}} title="Sync Kitchen Inventory" size="sm">
+      <Modal isOpen={syncModal.open} onClose={()=>{setSyncModal({open:false,whId:null});setSyncNote('');}} title="Sync from Central Kitchen" size="sm">
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm text-green-700 dark:text-green-400">
-            <span className="material-icons-outlined text-lg flex-shrink-0">sync</span>
-            <p>Records a sync snapshot of current inventory, visible to all linked kitchen staff in the sync log.</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Note (optional)</label>
-            <textarea className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm dark:bg-slate-800 bg-white outline-none focus:ring-2 focus:ring-primary/20 resize-none" rows={3} placeholder="e.g. End-of-day sync..." value={syncNote} onChange={e=>setSyncNote(e.target.value)}/>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={()=>{setSyncModal({open:false,whId:null});setSyncNote('');}} disabled={syncing}>Cancel</Button>
-            <Button className="flex-1" onClick={()=>doSync(syncModal.whId)} disabled={syncing}>{syncing?'Syncing...':'Sync Now'}</Button>
-          </div>
+          {display?.linkedKitchen ? (
+            <>
+              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-700 dark:text-blue-400">
+                <span className="material-icons-outlined text-lg flex-shrink-0">sync</span>
+                <div>
+                  <p className="font-medium">Pull inventory from: {display.linkedKitchen.name||'Central Kitchen'}</p>
+                  <p className="mt-1 text-xs opacity-80">This will update existing items and add any new items from the central kitchen into this warehouse's inventory.</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Note (optional)</label>
+                <textarea className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm dark:bg-slate-800 bg-white outline-none focus:ring-2 focus:ring-primary/20 resize-none" rows={3} placeholder="e.g. Weekly restock sync..." value={syncNote} onChange={e=>setSyncNote(e.target.value)}/>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="secondary" className="flex-1" onClick={()=>{setSyncModal({open:false,whId:null});setSyncNote('');}} disabled={syncing}>Cancel</Button>
+                <Button className="flex-1" onClick={()=>doSync(syncModal.whId)} disabled={syncing}>{syncing?'Syncing...':'Sync Now'}</Button>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <span className="material-icons-outlined text-4xl text-slate-300 dark:text-slate-600 block mb-2">link_off</span>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No central kitchen linked to this warehouse.</p>
+              <p className="text-xs text-slate-400 mt-1">Go to Kitchen Config to link one first.</p>
+              <Button variant="secondary" className="mt-4" onClick={()=>{setSyncModal({open:false,whId:null});setSyncNote('');}}>Close</Button>
+            </div>
+          )}
         </div>
       </Modal>
 

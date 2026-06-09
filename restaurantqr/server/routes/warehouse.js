@@ -182,28 +182,78 @@ router.patch('/:id/link-kitchen', authenticate, authorize('Admin', 'Company Admi
   }
 });
 
-// Kitchen sync — vendor pushes current inventory count to sync log (Vendor/Admin/Company Admin)
+// Kitchen sync — pulls inventory from linked central kitchen into this warehouse (Vendor/Admin/Company Admin)
 router.post('/:id/sync', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
   try {
     const { note } = req.body;
     const warehouse = await Warehouse.findById(req.params.id);
     if (!warehouse) return res.status(404).json({ message: 'Warehouse not found' });
 
+    if (!warehouse.linkedKitchen) {
+      return res.status(400).json({ message: 'No central kitchen linked. Link a kitchen first to sync inventory.' });
+    }
+
+    const kitchen = await Warehouse.findById(warehouse.linkedKitchen);
+    if (!kitchen) {
+      return res.status(404).json({ message: 'Linked central kitchen not found' });
+    }
+
+    if (!kitchen.isCentralKitchen) {
+      return res.status(400).json({ message: 'Linked warehouse is no longer a central kitchen' });
+    }
+
+    // Sync: merge kitchen inventory into warehouse
+    let itemsAdded = 0;
+    let itemsUpdated = 0;
+
+    for (const kitchenItem of kitchen.inventoryItems) {
+      // Match by SKU first, then by name
+      const existing = warehouse.inventoryItems.find(
+        (wi) =>
+          (kitchenItem.sku && wi.sku && wi.sku === kitchenItem.sku) ||
+          wi.name.toLowerCase() === kitchenItem.name.toLowerCase()
+      );
+
+      if (existing) {
+        // Update: sync threshold and unit from kitchen, set quantity to kitchen's quantity
+        existing.quantity = kitchenItem.quantity;
+        existing.unit = kitchenItem.unit;
+        existing.threshold = kitchenItem.threshold;
+        itemsUpdated++;
+      } else {
+        // Add new item from kitchen
+        warehouse.inventoryItems.push({
+          name: kitchenItem.name,
+          sku: kitchenItem.sku,
+          quantity: kitchenItem.quantity,
+          unit: kitchenItem.unit,
+          threshold: kitchenItem.threshold,
+        });
+        itemsAdded++;
+      }
+    }
+
     const syncEntry = {
       syncedBy: req.user._id,
       syncedAt: new Date(),
       note: note || null,
-      itemsSynced: warehouse.inventoryItems.length,
+      itemsSynced: kitchen.inventoryItems.length,
+      itemsAdded,
+      itemsUpdated,
+      sourceKitchen: kitchen._id,
+      sourceKitchenName: kitchen.name,
     };
     warehouse.syncLog.push(syncEntry);
+
     // Keep only last 50 sync entries
     if (warehouse.syncLog.length > 50) {
       warehouse.syncLog = warehouse.syncLog.slice(-50);
     }
+
     await warehouse.save();
     const populated = await Warehouse.findById(warehouse._id)
       .populate('linkedOutlets', 'name outletId')
-      .populate('linkedKitchen', 'name city')
+      .populate('linkedKitchen', 'name city isCentralKitchen')
       .populate('syncLog.syncedBy', 'name role');
     res.json(populated);
   } catch (error) {
