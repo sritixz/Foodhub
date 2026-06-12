@@ -19,7 +19,7 @@ const Select = ({
         <select
           value={value}
           onChange={onChange}
-          className={`w-full appearance-none px-4 py-2 bg-transparent border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 dark:text-slate-100 pr-10 ${error ? 'border-red-500' : ''} ${className}`}
+          className={`w-full appearance-none px-4 py-2 bg-transparent border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900 dark:text-slate-100 pr-12 truncate ${error ? 'border-red-500' : ''} ${className}`}
           {...props}
         >
           {placeholder && (

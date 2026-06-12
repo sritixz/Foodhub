@@ -511,7 +511,7 @@ const OrderManagement = () => {
                           )}
                           {isAdmin && (
                             <select
-                              className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-transparent"
+                              className="text-xs border border-slate-200 dark:border-slate-700 rounded-lg pl-2 pr-7 py-1 bg-transparent"
                               value={order.status}
                               onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
                             >
@@ -522,7 +522,7 @@ const OrderManagement = () => {
                           )}
                           {(isVendor || isAdmin) && ['Preparing', 'Ready'].includes(order.status) && order.deliveryMode === 'Delivery' && (
                             <select
-                              className="text-xs border border-blue-200 dark:border-blue-700 rounded-lg px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                              className="text-xs border border-blue-200 dark:border-blue-700 rounded-lg pl-2 pr-7 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                               value={order.assignedTo?._id || ''}
                               onChange={(e) => handleAssignDelivery(order._id, e.target.value)}
                             >

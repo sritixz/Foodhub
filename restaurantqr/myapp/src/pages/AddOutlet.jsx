@@ -8,6 +8,56 @@ import Card from '../components/UI/Card';
 import ImageUpload from '../components/ImageUpload';
 import api from '../utils/api';
 
+const indianStates = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+];
+
+const stateCityMap = {
+  'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Tirupati', 'Rajahmundry', 'Kakinada', 'Kadapa', 'Anantapur'],
+  'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Pasighat', 'Tawang', 'Ziro'],
+  'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon', 'Tinsukia', 'Tezpur'],
+  'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Purnia', 'Arrah', 'Begusarai'],
+  'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Korba', 'Durg', 'Rajnandgaon'],
+  'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
+  'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar', 'Junagadh'],
+  'Haryana': ['Gurugram', 'Faridabad', 'Panipat', 'Ambala', 'Karnal', 'Hisar', 'Rohtak', 'Sonipat'],
+  'Himachal Pradesh': ['Shimla', 'Manali', 'Dharamshala', 'Solan', 'Mandi', 'Kullu'],
+  'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh', 'Deoghar'],
+  'Karnataka': ['Bengaluru', 'Mysuru', 'Mangaluru', 'Hubli', 'Belgaum', 'Davangere', 'Shimoga', 'Tumkur'],
+  'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam', 'Kannur', 'Palakkad', 'Alappuzha'],
+  'Madhya Pradesh': ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Dewas', 'Satna'],
+  'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Thane', 'Nashik', 'Aurangabad', 'Solapur', 'Kolhapur', 'Navi Mumbai'],
+  'Manipur': ['Imphal', 'Thoubal', 'Bishnupur', 'Churachandpur'],
+  'Meghalaya': ['Shillong', 'Tura', 'Jowai', 'Nongstoin'],
+  'Mizoram': ['Aizawl', 'Lunglei', 'Champhai', 'Serchhip'],
+  'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung', 'Tuensang', 'Wokha'],
+  'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur', 'Puri'],
+  'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali', 'Pathankot'],
+  'Rajasthan': ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer', 'Bikaner', 'Alwar', 'Bharatpur'],
+  'Sikkim': ['Gangtok', 'Namchi', 'Gyalshing', 'Mangan'],
+  'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore'],
+  'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam', 'Mahbubnagar'],
+  'Tripura': ['Agartala', 'Udaipur', 'Dharmanagar', 'Kailashahar'],
+  'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Allahabad', 'Meerut', 'Noida', 'Ghaziabad', 'Bareilly'],
+  'Uttarakhand': ['Dehradun', 'Haridwar', 'Rishikesh', 'Haldwani', 'Roorkee', 'Nainital'],
+  'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Bardhaman', 'Kharagpur'],
+  'Andaman and Nicobar Islands': ['Port Blair'],
+  'Chandigarh': ['Chandigarh'],
+  'Dadra and Nagar Haveli and Daman and Diu': ['Silvassa', 'Daman', 'Diu'],
+  'Delhi': ['New Delhi', 'Delhi'],
+  'Jammu and Kashmir': ['Srinagar', 'Jammu', 'Anantnag', 'Baramulla', 'Udhampur'],
+  'Ladakh': ['Leh', 'Kargil'],
+  'Lakshadweep': ['Kavaratti'],
+  'Puducherry': ['Puducherry', 'Karaikal', 'Mahe', 'Yanam']
+};
+
 const AddOutlet = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState('business');
@@ -229,7 +279,7 @@ const AddOutlet = () => {
       };
 
       const response = await api.post('/outlets', outletData);
-      navigate('/');
+      navigate('/outlets');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create outlet');
     } finally {
@@ -395,16 +445,19 @@ const AddOutlet = () => {
                 <Select
                   label="State"
                   value={formData.location.state}
-                  onChange={(e) => handleInputChange('location.state', e.target.value)}
-                  options={['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu']}
+                  onChange={(e) => {
+                    handleInputChange('location.state', e.target.value);
+                    handleInputChange('location.city', '');
+                  }}
+                  options={indianStates}
                   placeholder="Select state"
                 />
                 <Select
                   label="City"
                   value={formData.location.city}
                   onChange={(e) => handleInputChange('location.city', e.target.value)}
-                  options={['Mumbai', 'Pune', 'Bangalore', 'Chennai']}
-                  placeholder="Select city"
+                  options={formData.location.state ? (stateCityMap[formData.location.state] || []) : []}
+                  placeholder={formData.location.state ? "Select city" : "Select state first"}
                 />
               </div>
             </div>

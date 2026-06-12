@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useDarkMode from '../../hooks/useDarkMode';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +8,21 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { toggleDarkMode } = useDarkMode();
   const { logout, user } = useAuth();
+  const navRef = useRef(null);
+
+  // Restore scroll position on mount and route changes
+  useEffect(() => {
+    const saved = sessionStorage.getItem('sidebar-scroll');
+    if (saved && navRef.current) {
+      navRef.current.scrollTop = Number(saved);
+    }
+  }, [location.pathname]);
+
+  const handleNavScroll = () => {
+    if (navRef.current) {
+      sessionStorage.setItem('sidebar-scroll', navRef.current.scrollTop);
+    }
+  };
 
   const menuItems = [
     { icon: 'dashboard', label: 'Dashboard', path: '/' },
@@ -53,7 +69,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <span className="material-icons-outlined">close</span>
         </button>
       </div>
-      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
+      <nav ref={navRef} onScroll={handleNavScroll} className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => {
           const active = isActive(item.path);
           const isDisabled = item.disabled;

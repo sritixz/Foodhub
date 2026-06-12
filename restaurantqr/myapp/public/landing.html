@@ -1,0 +1,2050 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Mopy - Food for Offices Without a Corporate Cafeteria</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                screens: {
+                    'sm': '640px',
+                    'md': '768px',
+                    'lg': '1024px',
+                    'xl': '1280px',
+                    '2xl': '1536px',
+                    '3xl': '1920px',
+                },
+                extend: {
+                    container: {
+                        center: true,
+                        padding: {
+                            DEFAULT: '1rem',
+                            sm: '2rem',
+                            lg: '4rem',
+                            xl: '5rem',
+                            '2xl': '6rem',
+                        },
+                    },
+                    colors: {
+                        "primary": "#ED1C24",
+                        "primary-hover": "#C41A1F",
+                        "background-light": "#F6EFE8",
+                        "background-dark": "#1F1512",
+                        "text-main": "#2B1C17",
+                        "text-sub": "#7B5A50",
+                        "surface": "#FFFFFF",
+                        "surface-muted": "#F9F3EE",
+                        "border-subtle": "#E8D8CF",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
+                    animation: {
+                        'fade-in': 'fadeIn 0.6s ease-out forwards',
+                        'slide-up': 'slideUp 0.8s ease-out forwards',
+                        'bounce-gentle': 'bounceGentle 3s infinite',
+                        'pulse-slow': 'pulse 4s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'shine': 'shine 1.5s infinite',
+                        'marquee': 'marquee 25s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(40px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        bounceGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        shine: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        },
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(43, 28, 23, 0.05)',
+                        'glow': '0 10px 30px -5px rgba(237, 28, 36, 0.3)',
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        :root {
+            --cream: #F6EFE8;
+            --paper: #FFFFFF;
+            --ink: #2B1C17;
+            --ink-muted: #7B5A50;
+            --red: #ED1C24;
+            --red-dark: #C41A1F;
+            --border: #E8D8CF;
+            --accent-soft: rgba(237, 28, 36, 0.08);
+        }
+
+        html {
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .max-w-container {
+            width: 100%;
+            max-width: 80rem; /* 1280px - max-w-7xl */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (min-width: 1536px) {
+            .max-w-container {
+                max-width: 90rem; /* 1440px */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .max-w-container {
+                max-width: 110rem; /* 1760px */
+            }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(232, 216, 207, 0.6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark .glass-card {
+            background: rgba(31, 21, 18, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            border-color: rgba(237, 28, 36, 0.2);
+        }
+
+        /* Improved Navigation */
+        .nav-shell {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.4rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            white-space: nowrap;
+        }
+
+        .nav-link {
+            position: relative;
+            display: inline-flex;
+            min-height: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0.95rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            color: var(--ink);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            color: var(--red);
+            background: var(--accent-soft);
+        }
+
+        @media (min-width: 1536px) {
+            .nav-shell {
+                gap: 0.5rem;
+            }
+
+            .nav-link {
+                padding-inline: 1.25rem;
+            }
+        }
+
+        /* Menu Card Specifics - No Images */
+        .menu-items > li:not(.menu-subhead) {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1rem !important;
+            border-radius: 0.75rem;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .menu-items > li:not(.menu-subhead):hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-color: rgba(237, 28, 36, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .menu-items > li:not(.menu-subhead) span:first-child {
+            flex: 1;
+            font-weight: 600;
+            color: var(--ink) !important;
+            font-size: 0.95rem;
+        }
+
+        .menu-price,
+        .menu-items > li:not(.menu-subhead) span:last-child {
+            background: var(--red) !important;
+            color: #fff !important;
+            padding: 0.4rem 0.9rem !important;
+            border-radius: 9999px !important;
+            font-weight: 700 !important;
+            font-size: 0.9rem !important;
+            min-width: 4.5rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(237, 28, 36, 0.25) !important;
+            flex-shrink: 0;
+        }
+
+        .menu-subhead {
+            grid-column: 1 / -1;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            border-bottom: 2px solid var(--border);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Animation Classes for Intersection Observer */
+        .reveal-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal-up.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-stagger > * {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal-stagger.active > * {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-stagger.active > *:nth-child(1) { transition-delay: 0.1s; }
+        .reveal-stagger.active > *:nth-child(2) { transition-delay: 0.2s; }
+        .reveal-stagger.active > *:nth-child(3) { transition-delay: 0.3s; }
+        .reveal-stagger.active > *:nth-child(4) { transition-delay: 0.4s; }
+        .reveal-stagger.active > *:nth-child(5) { transition-delay: 0.5s; }
+
+        /* Button Shine Effect */
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Sidebar Transitions */
+        .sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(-100%);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .btn-shine::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.3) 50%,
+                rgba(255,255,255,0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: all 0.75s;
+        }
+        
+        .btn-shine:hover::after {
+            animation: shine 1s;
+        }
+
+        @keyframes shine {
+            100% {
+                left: 125%;
+            }
+
+        }
+        /* Team section stat cards */
+        .bg-white\/8 { background-color: rgba(255,255,255,0.08); }
+
+        /* Hero Ticket Badges */
+        .hero-ticket-badge {
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: default;
+            user-select: none;
+        }
+        .hero-ticket-badge::before {
+            content: '';
+            position: absolute;
+            left: -1px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            border-radius: 0 2px 2px 0;
+            background: currentColor;
+            opacity: 0.25;
+        }
+        .hero-ticket-badge:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Client card hover fix — inset shadow prevents layout shift */
+        .client-card {
+            box-shadow: inset 0 0 0 1px transparent;
+            transition: box-shadow 0.25s ease, transform 0.25s ease;
+        }
+        .client-card:hover {
+            box-shadow: inset 0 0 0 2px var(--red), 0 8px 24px -4px rgba(237,28,36,0.12);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Fade Slider */
+        .hero-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            animation: heroSlider 16s infinite ease-in-out;
+        }
+        .hero-slide:nth-child(1) { animation-delay: 0s; }
+        .hero-slide:nth-child(2) { animation-delay: 4s; }
+        .hero-slide:nth-child(3) { animation-delay: 8s; }
+        .hero-slide:nth-child(4) { animation-delay: 12s; }
+
+        @keyframes heroSlider {
+            0%, 100% { opacity: 0; transform: scale(1.02); }
+            6%, 25% { opacity: 1; transform: scale(1); }
+            31% { opacity: 0; transform: scale(0.98); }
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main antialiased selection:bg-primary/20 selection:text-primary">
+    <!-- Sidebar Menu -->
+    <div id="sidebar"
+        class="sidebar fixed top-0 left-0 h-full w-[min(20rem,calc(100vw-2rem))] bg-white dark:bg-gray-900 shadow-2xl z-50 xl:hidden font-display">
+        <div class="p-6 h-full overflow-y-auto relative z-10">
+            <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-glow">
+                        <span class="material-symbols-outlined text-[24px]">lunch_dining</span>
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight text-text-main dark:text-white">Mopy</h2>
+                </div>
+                <button id="closeSidebar"
+                    class="p-2 hover:bg-red-50 dark:hover:bg-white/5 rounded-xl transition-colors text-text-sub">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <nav class="space-y-3">
+                <a href="#about-us" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">info</span>
+                    About Us
+                </a>
+                <a href="#categories" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">restaurant_menu</span>
+                    Menu
+                </a>
+                <a href="#business-model" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">hub</span>
+                    Business Model
+                </a>
+                <a href="#clients" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">handshake</span>
+                    Clients
+                </a>
+                <a href="#promoter" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">groups</span>
+                    Our Team
+                </a>
+                <a href="#franchise" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">store</span>
+                    Franchise
+                </a>
+                <a href="#testimonials" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">format_quote</span>
+                    Reviews
+                </a>
+                <a href="#contact" class="sidebar-link flex items-center gap-4 p-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-white/5 transition-all text-text-main dark:text-white font-medium group">
+                    <span class="material-symbols-outlined text-text-sub group-hover:text-primary transition-colors">mail</span>
+                    Contact Us
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay"
+        class="fixed inset-0 bg-background-dark/60 backdrop-blur-sm z-40 xl:hidden opacity-0 pointer-events-none transition-opacity duration-300">
+    </div>
+
+    <header
+        class="fixed top-0 z-30 w-full transition-all duration-300" id="main-header">
+        <div class="absolute inset-0 bg-white/70 backdrop-blur-md border-b border-white/50 dark:bg-background-dark/80 dark:border-white/5"></div>
+        <div class="relative mx-auto flex h-16 sm:h-20 max-w-container items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center gap-4">
+                <!-- Mobile Menu Button -->
+                <button id="menuButton"
+                    class="xl:hidden p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-text-main dark:text-white">menu</span>
+                </button>
+                <a href="#" class="flex items-center gap-2.5 group">
+                    <div
+                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-glow transition-transform group-hover:scale-110">
+                        <span class="material-symbols-outlined text-[20px]">lunch_dining</span>
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight text-text-main dark:text-white">Mopy</h2>
+                </a>
+            </div>
+            
+            <nav class="hidden xl:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div class="nav-shell">
+                    <a class="nav-link text-sm" href="#about-us">About Us</a>
+                    <a class="nav-link text-sm" href="#categories">Categories</a>
+                    <a class="nav-link text-sm" href="#business-model">Business Model</a>
+                    <a class="nav-link text-sm" href="#clients">Clients</a>
+                    <a class="nav-link text-sm" href="#promoter">Leadership</a>
+                    <a class="nav-link text-sm" href="#franchise">Franchise</a>
+                    <a class="nav-link text-sm" href="#testimonials">Reviews</a>
+                    <a class="nav-link text-sm" href="#contact">Contact Us</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex flex-col pt-12 sm:pt-18">
+        <!-- Hero Section -->
+        <section class="relative overflow-hidden pt-4 pb-8 lg:pt-10 lg:pb-12">
+            <!-- Background Decorations -->
+            <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[800px] h-[800px] bg-red-500/8 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[600px] h-[600px] bg-orange-500/8 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-red-400/5 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                    <div class="flex flex-col items-start text-left reveal-up active">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100/50 dark:bg-red-900/20 text-primary text-xs font-bold tracking-wider uppercase mb-6 border border-red-200/50 dark:border-red-500/20">
+                            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            Live in 15+ Offices
+                        </div>
+                        <h1 class="text-4xl sm:text-5xl lg:text-7xl 2xl:text-8xl 3xl:text-9xl font-extrabold tracking-tight text-text-main dark:text-white mb-6 leading-[1.05]">
+                            Food that works <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-500">for you.</span>
+                        </h1>
+                        <p class="text-lg sm:text-xl 2xl:text-2xl text-text-sub dark:text-gray-400 mb-8 max-w-lg 2xl:max-w-2xl leading-relaxed font-medium">
+                            No Corporate Cafeteria? No Problem. <br>
+                            MOPY brings fresh, hygienic, and affordable meals directly to your office desk.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-stretch sm:items-center">
+                            <a href="#franchise"
+                                class="inline-flex h-14 items-center justify-center rounded-full bg-white border border-gray-200 px-8 text-lg font-bold text-text-main hover:border-primary hover:text-primary hover:bg-red-50/50 transition-all dark:bg-white/5 dark:border-white/10 dark:text-white leading-none">
+                                Partner With Us
+                            </a>
+                        </div>
+                        
+                        <div class="mt-10 flex items-center gap-4 text-sm font-semibold text-text-sub/80">
+                            <div class="flex -space-x-2">
+                                <div class="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 bg-amber-50 flex items-center justify-center text-xl leading-none shadow-sm">👩</div>
+                                <div class="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 bg-orange-50 flex items-center justify-center text-xl leading-none shadow-sm">👨</div>
+                                <div class="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 bg-red-50 flex items-center justify-center text-xl leading-none shadow-sm">🧑</div>
+                                <div class="w-10 h-10 rounded-full border-2 border-white dark:border-gray-800 bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shadow-sm">+2k</div>
+                            </div>
+                            <span>Happy employees served daily</span>
+                        </div>
+                    </div>
+
+                    <div class="relative lg:h-[680px] flex flex-col items-center justify-center gap-4 reveal-up active delay-200">
+
+                        <!-- Badge Row — TOP, above image -->
+                        <div class="flex items-center justify-center gap-3 w-full flex-wrap z-20">
+                            <!-- Ticket Badge: Veg & Non-Veg -->
+                            <div class="hero-ticket-badge flex items-center gap-2.5 bg-white border border-green-200 rounded-xl px-4 py-2.5 shadow-lg" style="box-shadow:0 4px 20px rgba(34,197,94,0.15);">
+                                <div class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">eco</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-green-700 font-extrabold uppercase tracking-widest leading-none">Veg &amp; Non-Veg</p>
+                                    <p class="text-sm font-bold text-text-main leading-tight">Fresh &amp; Hygienic</p>
+                                </div>
+                            </div>
+                            <!-- Ticket Badge: RFID & QR -->
+                            <div class="hero-ticket-badge flex items-center gap-2.5 bg-white border border-blue-200 rounded-xl px-4 py-2.5 shadow-lg" style="box-shadow:0 4px 20px rgba(59,130,246,0.15);">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">contactless</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-blue-700 font-extrabold uppercase tracking-widest leading-none">Quick Tap</p>
+                                    <p class="text-sm font-bold text-text-main leading-tight">RFID &amp; QR Enabled</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Container — enlarged, no badges inside -->
+                        <div class="relative w-full max-w-[580px] mx-auto z-10">
+                            <!-- Glow aura behind image -->
+                            <div class="absolute -inset-4 bg-gradient-to-br from-red-200 via-orange-100 to-red-50 rounded-[2.5rem] blur-2xl opacity-70 pointer-events-none"></div>
+
+                            <div class="relative rounded-[1.75rem] overflow-hidden border-[5px] border-white bg-white z-10"
+                                style="box-shadow: 0 32px 80px -8px rgba(43,28,23,0.22), 0 8px 24px -4px rgba(237,28,36,0.18), 0 0 0 1px rgba(255,255,255,0.9);">
+                                <div class="aspect-[4/3] w-full relative">
+                                    <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/mopi.jpeg" alt="Mopy Kiosk Setup" class="hero-slide w-full h-full object-cover">
+                                    <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Gemini3.png" alt="Mopy Office Pantry" class="hero-slide w-full h-full object-cover">
+                                    <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Gemini4.png" alt="Fresh Food at MOPY" class="hero-slide w-full h-full object-cover">
+                                    <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Gemini5.png" alt="Mopy Kiosk Franchise Model" class="hero-slide w-full h-full object-cover">
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-5 pt-14 text-white z-20">
+                                        <h3 class="text-base font-bold mb-0.5">Mopy Kiosk — Your Corporate Cafeteria</h3>
+                                        <p class="text-white/75 text-xs">Fresh meals served right in your office complex, every day.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Badge Row — BOTTOM, below image -->
+                        <div class="flex items-center justify-center w-full z-20">
+                            <!-- Ticket Badge: Super Fast -->
+                            <div class="hero-ticket-badge flex items-center gap-2.5 bg-white border border-orange-200 rounded-xl px-4 py-2.5 shadow-lg" style="box-shadow:0 4px 20px rgba(249,115,22,0.15);">
+                                <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">timer</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-orange-700 font-extrabold uppercase tracking-widest leading-none">Super Fast</p>
+                                    <p class="text-sm font-bold text-text-main leading-tight">Order in 30s</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+        <section class="bg-primary py-4 overflow-hidden shadow-inner relative z-20">
+            <div class="flex whitespace-nowrap animate-marquee">
+                <div class="flex gap-16 text-white font-medium text-sm items-center">
+                    <span>🔥 "A perfect place for a daily refreshment in between busy office hours!"</span>
+                    <span>🌟 "Very reasonable pricing in menu as per the quality and variety provided by MOPY"</span>
+                    <span>🏢 "We are thankful that MOPY is present in our office complex. We don't have to wait for long or pay high delivery charges."</span>
+                    <span>❤️ "Thank you MOPY for such a consistent and good taste with quality and variety for regular office goers like us."</span>
+                </div>
+                <div class="flex gap-16 text-white font-medium text-sm items-center ml-16">
+                    <span>🔥 "A perfect place for a daily refreshment in between busy office hours!"</span>
+                    <span>🌟 "Very reasonable pricing in menu as per the quality and variety provided by MOPY"</span>
+                    <span>🏢 "We are thankful that MOPY is present in our office complex. We don't have to wait for long or pay high delivery charges."</span>
+                    <span>❤️ "Thank you MOPY for such a consistent and good taste with quality and variety for regular office goers like us."</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clients Section -->
+        <section class="py-20 lg:py-28 relative overflow-hidden bg-surface-muted dark:bg-white/5" id="clients">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8 relative z-10">
+
+                <!-- Header -->
+                <div class="text-center mb-16">
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase mb-5 border border-primary/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                        Our Clients & Partners
+                    </span>
+                    <h3 class="text-3xl sm:text-5xl font-extrabold text-text-main dark:text-white mb-5 leading-tight">
+                        Trusted by <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">15+ leading</span><br>workplaces
+                    </h3>
+                    <p class="text-text-sub dark:text-gray-400 max-w-lg mx-auto text-lg">From corporates to consulting firms, MOPY powers the lunch breaks of India's top offices.</p>
+                </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/airproducts.jpeg" alt="Air Products" class="max-h-full max-w-full object-contain">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">01</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Air Products India</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Alembic Business Park</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/deepak.jpeg" alt="Deepak Nitrate" class="max-h-full max-w-full object-contain">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">02</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Deepak Nitrate Group</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Alembic Business Park</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/aditi.jpeg" alt="Aditi Consulting" class="max-h-full max-w-full object-cover">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">03</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Aditi Consulting</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Alembic Business Park</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/rexel.jpeg" alt="Rexel India" class="max-h-full max-w-full object-cover">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">04</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Rexel India Pvt Ltd</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Krishna Industrial Estate</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/collabera.jpeg" alt="Collabera" class="max-h-full max-w-full object-cover">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">05</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Collabera Solutions</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Nillamber Corporate Park</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/allscripts.jpeg" alt="Allscript India" class="max-h-full max-w-full object-cover">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">06</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Allscript India Pvt Ltd</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Atlantis Heights</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TCE -->
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/tata.png" alt="Tata Consulting Engineers" class="max-h-full w-full  object-cover">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">07</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Tata Consulting Engineers</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">L&amp;T Circle, Karelibaugh</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kotak Mahindra Bank -->
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/kotak.png" alt="Kotak Mahindra Bank" class="max-h-full w-full  object-contain">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">08</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Kotak Mahindra Bank</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Spencers Mall Business Park</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kent -->
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/kent.jpeg" alt="Kotak Mahindra Bank" class="max-h-full w-full  object-contain">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">09</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Kent</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">Temons Business Park</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex flex-col justify-between items-stretch min-h-[160px]">
+                        <div class="h-16 rounded-lg bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center p-2 overflow-hidden group-hover:bg-white dark:group-hover:bg-gray-900 transition-colors">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/xylem.png" alt="Kotak Mahindra Bank" class="max-h-full w-full  object-contain">
+                        </div>
+                        <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2 flex items-start gap-2">
+                            <div class="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] shrink-0 mt-0.5">09</div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-xs text-text-main dark:text-white truncate">Xylem</h4>
+                                <p class="text-[10px] text-text-sub dark:text-gray-400 truncate mt-0.5">73 East Avenue</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- We Are Present At -->
+                <div class="mb-20">
+                    <h4 class="text-center text-text-sub dark:text-gray-400 text-xs font-bold uppercase tracking-widest mb-5">We Are Present At</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                <span class="material-symbols-outlined">apartment</span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-sm text-text-main dark:text-white truncate">Nillamber Triumph</h4>
+                                <p class="text-xs text-text-sub dark:text-gray-400 truncate mt-0.5">Nillamber Cross Road</p>
+                            </div>
+                        </div>
+                        <div class="client-card group bg-white dark:bg-white/5 border border-border-subtle rounded-xl p-4 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                <span class="material-symbols-outlined">apartment</span>
+                            </div>
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-sm text-text-main dark:text-white truncate">Panorama Complex</h4>
+                                <p class="text-xs text-text-sub dark:text-gray-400 truncate mt-0.5">R C Dutt Road</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="flex items-center mb-8">
+                    <div class="flex-1 h-px bg-border-subtle"></div>
+                    <span class="text-text-sub/60 text-xs font-bold uppercase tracking-widest px-4">From our client offices</span>
+                    <div class="flex-1 h-px bg-border-subtle"></div>
+                </div>
+
+                <!-- Masonry Photo Gallery -->
+           <div class="relative max-w-2xl mx-auto px-4 mt-8">
+                    <div class="glass-card rounded-2xl overflow-hidden shadow-xl aspect-[16/10] bg-white relative">
+                        <!-- Slide 1: Fresh Food -->
+                        <div class="office-slide w-full h-full absolute inset-0 block transition-all duration-500">
+                            <img src="https://raw.githubusercontent.com/Gagan-0001/mopy_images/main/landing_page/WhatsApp%20Image%202026-04-15%20at%209.39.46%20PM.jpeg" class="w-full h-full object-cover" alt="Fresh Food">
+                            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-5 text-white">
+                                <span class="text-sm font-bold">Fresh Food</span>
+                            </div>
+                        </div>
+                        <!-- Slide 2: Active Food Service -->
+                        <div class="office-slide w-full h-full absolute inset-0 hidden transition-all duration-500">
+                            <img src="https://raw.githubusercontent.com/Gagan-0001/mopy_images/main/landing_page/WhatsApp%20Image%202026-04-15%20at%209.39.48%20PM%20(1).jpeg" class="w-full h-full object-cover" alt="Active Food Service">
+                            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-5 text-white">
+                                <span class="text-sm font-bold">Active Food Service</span>
+                            </div>
+                        </div>
+                        <!-- Slide 3: Our Counter -->
+                        <div class="office-slide w-full h-full absolute inset-0 hidden transition-all duration-500">
+                            <img src="https://raw.githubusercontent.com/Gagan-0001/mopy_images/main/landing_page/WhatsApp%20Image%202026-04-15%20at%209.39.47%20PM.jpeg" class="w-full h-full object-cover" alt="Our Counter">
+                            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-5 text-white">
+                                <span class="text-sm font-bold">Our Counter</span>
+                            </div>
+                        </div>
+                       
+                        <!-- Slide 5 (last): Mopy Kiosk -->
+                        <div class="office-slide w-full h-full absolute inset-0 hidden transition-all duration-500">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/WhatsApp Image 2026-04-15 at 9.39.46 PM (2).jpeg" class="w-full h-full object-cover" alt="Mopy Kiosk Setup">
+                            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 p-5 text-white">
+                                <span class="text-sm font-bold">Mopy Kiosk Setup</span>
+                            </div>
+                        </div>
+                     
+                        <button onclick="changeOfficeSlide(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-text-main p-2 rounded-full shadow-md z-20 flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-base">arrow_back_ios_new</span>
+                        </button>
+                        <button onclick="changeOfficeSlide(1)" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-text-main p-2 rounded-full shadow-md z-20 flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-base">arrow_forward_ios</span>
+                        </button>
+                    </div>
+                </div>
+
+                <script>
+                    let currentOfficeIdx = 0;
+                    function changeOfficeSlide(direction) {
+                        const slides = document.querySelectorAll('.office-slide');
+                        slides[currentOfficeIdx].classList.add('hidden');
+                        currentOfficeIdx = (currentOfficeIdx + direction + slides.length) % slides.length;
+                        slides[currentOfficeIdx].classList.remove('hidden');
+                    }
+                </script>
+            </div>
+        </section>
+
+        <!-- About Us -->
+        <section class="py-20 lg:py-32 relative animate-on-scroll" id="about-us">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20 max-w-3xl 2xl:max-w-5xl mx-auto reveal-up">
+                    <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-4">Why Mopy?</h2>
+                    <h3 class="text-3xl sm:text-5xl 2xl:text-6xl font-extrabold text-text-main dark:text-white mb-6">
+                        We’re not just a canteen. <br>
+                        We’re your <span class="text-primary italic">daily fuel.</span>
+                    </h3>
+                    <p class="text-lg text-text-sub dark:text-gray-400 leading-relaxed">
+                        MOPY bridges the gap between hungry office goers and delicious, affordable food. 
+                        We combine the freshness of a home-cooked meal with the speed of a QSR.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-6 gap-8 reveal-stagger items-stretch">
+                    <!-- Feature 1 -->
+                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-8xl text-primary">bolt</span>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-3xl">bolt</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-text-main dark:text-white mb-3">Lightning Fast</h4>
+                        <p class="text-text-sub dark:text-gray-400 leading-relaxed">
+                            Don't waste your break waiting. Our streamlined process ensures your food is ready before you are.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-8xl text-primary">eco</span>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-3xl">eco</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-text-main dark:text-white mb-3">Fresh & Hygienic</h4>
+                        <p class="text-text-sub dark:text-gray-400 leading-relaxed">
+                            Prepared daily in controlled kitchens with premium ingredients. Hygiene is our obsession.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-8xl text-primary">currency_rupee</span>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-3xl">currency_rupee</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-text-main dark:text-white mb-3">Pocket Friendly</h4>
+                        <p class="text-text-sub dark:text-gray-400 leading-relaxed">
+                            Great taste shouldn't cost a fortune. We offer premium quality at street-smart prices.
+                        </p>
+                    </div>
+                    
+                    <!-- Feature 4 -->
+                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-8xl text-primary">chair</span>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-3xl">chair</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-text-main dark:text-white mb-3">Comfort Kiosks</h4>
+                        <p class="text-text-sub dark:text-gray-400 leading-relaxed">
+                            Take a break in our clean, vibrant kiosks designed for a quick recharge.
+                        </p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="glass-card p-8 rounded-3xl relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-8xl text-primary">restaurant</span>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-3xl">restaurant</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-text-main dark:text-white mb-3">Chef Curated</h4>
+                        <p class="text-text-sub dark:text-gray-400 leading-relaxed">
+                            Recipes crafted by experts to ensure every bite is packed with consistent flavor.
+                        </p>
+                    </div>
+
+                    <!-- Feature 6 (Summary) -->
+                    <div class="bg-gradient-to-br from-primary to-orange-600 p-8 rounded-3xl text-white relative overflow-hidden group flex flex-col justify-center items-center text-center">
+                        <div class="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
+                        <h4 class="text-2xl font-bold mb-3 relative z-10">Ready to taste?</h4>
+                        <p class="text-white/80 mb-6 relative z-10">Explore our wide menu categories or download the full menu.</p>
+                        <a href="#categories" class="relative z-10 inline-flex h-10 items-center justify-center rounded-full bg-white text-primary px-6 font-bold shadow-lg hover:scale-105 transition-transform">
+                            Explore Menu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Food Categories Section (replaces full menu) -->
+        <section class="py-16 lg:py-24 bg-background-light dark:bg-white/5 animate-on-scroll" id="categories">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-14 reveal-up">
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase mb-5 border border-primary/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                        What We Serve
+                    </span>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold text-text-main dark:text-white mb-5">
+                        Something for <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">every craving</span>
+                    </h2>
+                    <p class="text-text-sub dark:text-gray-400 max-w-2xl mx-auto text-lg">From morning chai to hearty full meals — MOPY covers every moment of your office day with fresh, affordable food.</p>
+                </div>
+
+                <!-- Category Cards Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-14 reveal-stagger">
+                    <!-- Hot Beverages -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-primary">
+                            <span class="material-symbols-outlined text-3xl">local_cafe</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Hot Beverages</span>
+                        <span class="text-xs text-text-sub">Tea · Coffee · Soups</span>
+                    </div>
+                    <!-- Cold Beverages -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-blue-600">
+                            <span class="material-symbols-outlined text-3xl">water_drop</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Cold Beverages</span>
+                        <span class="text-xs text-text-sub">Chaas · Cold Drinks</span>
+                    </div>
+                    <!-- Smoothies & Shakes -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-purple-600">
+                            <span class="material-symbols-outlined text-3xl">blender</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Smoothies & Shakes</span>
+                        <span class="text-xs text-text-sub">Fruit Shakes · Blends</span>
+                    </div>
+                    <!-- Fried Snacks -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-yellow-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-yellow-600">
+                            <span class="material-symbols-outlined text-3xl">fastfood</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Fried Snacks</span>
+                        <span class="text-xs text-text-sub">Samosa · Pakoda · Vada</span>
+                    </div>
+                    <!-- Sandwich & Burger -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-orange-600">
+                            <span class="material-symbols-outlined text-3xl">lunch_dining</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Sandwich & Burger</span>
+                        <span class="text-xs text-text-sub">Grilled · Cheese · Corn</span>
+                    </div>
+                    <!-- Healthy Snacks -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-green-600">
+                            <span class="material-symbols-outlined text-3xl">eco</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Healthy Snacks</span>
+                        <span class="text-xs text-text-sub">Makhana · Sprouts</span>
+                    </div>
+                    <!-- Bakery Items -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-amber-700">
+                            <span class="material-symbols-outlined text-3xl">bakery_dining</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Bakery Items</span>
+                        <span class="text-xs text-text-sub">Puffs · Rolls · Breads</span>
+                    </div>
+                    <!-- Seasonal Delicacies -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-teal-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-teal-600">
+                            <span class="material-symbols-outlined text-3xl">sunny</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Seasonal Delicacies</span>
+                        <span class="text-xs text-text-sub">Festival Specials</span>
+                    </div>
+                    <!-- Regional Delicacies -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-rose-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-rose-600">
+                            <span class="material-symbols-outlined text-3xl">map</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Regional Delicacies</span>
+                        <span class="text-xs text-text-sub">Dhokla · Thepla · Poha</span>
+                    </div>
+                    <!-- Combo Meals -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-indigo-600">
+                            <span class="material-symbols-outlined text-3xl">set_meal</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Combo Meals</span>
+                        <span class="text-xs text-text-sub">Value Combos · Deals</span>
+                    </div>
+                    <!-- Mini Meals -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-cyan-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-cyan-600">
+                            <span class="material-symbols-outlined text-3xl">tapas</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Mini Meals</span>
+                        <span class="text-xs text-text-sub">Light · Quick · Fresh</span>
+                    </div>
+                    <!-- Full Meals -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-primary">
+                            <span class="material-symbols-outlined text-3xl">restaurant</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Full Meals</span>
+                        <span class="text-xs text-text-sub">Biryani · Rice · Roti</span>
+                    </div>
+                    <!-- Fruit Bowls -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-pink-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-pink-600">
+                            <span class="material-symbols-outlined text-3xl">nutrition</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Fruit Bowls</span>
+                        <span class="text-xs text-text-sub">Seasonal · Fresh Cut</span>
+                    </div>
+                    <!-- Salad Bowls -->
+                    <div class="group glass-card rounded-2xl p-5 flex flex-col items-center gap-3 text-center cursor-default hover:border-primary/40 hover:shadow-glow transition-all duration-300">
+                        <div class="w-14 h-14 rounded-2xl bg-lime-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 text-lime-600">
+                            <span class="material-symbols-outlined text-3xl">salad</span>
+                        </div>
+                        <span class="font-bold text-text-main dark:text-white text-sm leading-snug group-hover:text-primary transition-colors">Salad Bowls</span>
+                        <span class="text-xs text-text-sub">Healthy · Crunchy</span>
+                    </div>
+                </div>
+
+                <!-- Full Meal CTA -->
+                <div class="bg-gradient-to-br from-primary to-orange-600 rounded-3xl p-8 sm:p-12 text-white text-center relative overflow-hidden mb-10">
+                    <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+                    <div class="relative z-10">
+                        <span class="inline-block px-4 py-1 rounded-full bg-white/20 text-white text-xs font-bold tracking-widest uppercase mb-4">Pre-Order Special</span>
+                        <h3 class="text-2xl sm:text-3xl font-extrabold mb-4">Full Meal Available on Pre-Order</h3>
+                        <p class="text-white/80 max-w-lg mx-auto mb-6">A wholesome, freshly prepared full meal delivered to your office. Order before time and enjoy priority service.</p>
+                        
+                    </div>
+                </div>
+
+                <!-- Download Menu CTA -->
+                <div class="text-center">
+                    <p class="text-text-sub dark:text-gray-400 mb-4 text-sm">Want to see the full menu with prices? Download our complete menu PDF.</p>
+                    <button onclick="document.getElementById('menuLeadModal').classList.remove('hidden')"
+                        class="inline-flex h-12 items-center justify-center rounded-lg border-2 border-primary bg-transparent px-8 text-base font-bold text-primary hover:bg-primary hover:text-white transition-all duration-200 hover:scale-105 btn-ripple">
+                        <span class="material-symbols-outlined mr-2">download</span> Download Full Menu
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-12 sm:py-16 lg:py-24 animate-on-scroll" id="dine-delivery">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+                    <div class="order-2 lg:order-1 relative">
+                        <div class="relative aspect-square w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-100">
+                            <div class="absolute inset-0 bg-gradient-to-tr from-gray-900/40 to-transparent z-10">
+                            </div>
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/WhatsApp%20Image%202026-04-15%20at%209.39.46%20PM%20(1).jpeg" alt="Mopy Kiosk" class="absolute inset-0 w-full h-full object-cover">
+
+                            <div
+                                class="absolute bottom-8 left-8 right-8 bg-white/95 backdrop-blur dark:bg-gray-900/95 p-6 rounded-2xl shadow-lg z-20">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined">moped</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-text-main dark:text-white">Fast Delivery
+                                        </p>
+                                        <p class="text-xs text-text-sub">To your desk in minutes</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined">storefront</span>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-text-main dark:text-white">Cozy Kiosks</p>
+                                        <p class="text-xs text-text-sub">Relax and recharge</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-1 lg:order-2">
+                        <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-3">DINE-IN &
+                            DELIVERY
+                        </h2>
+                        <h3 class="text-3xl sm:text-4xl 2xl:text-6xl font-bold text-text-main dark:text-white mb-8">
+                            Convenience at
+                            your command.</h3>
+
+                        <div class="space-y-8">
+                            <div class="flex flex-col sm:flex-row gap-5">
+                                <div
+                                    class="flex-shrink-0 h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-2xl">chair_alt</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold text-text-main dark:text-white mb-2">Casual
+                                        Dine-In
+                                    </h4>
+                                    <p class="text-text-sub dark:text-gray-400">Relax and recharge in our
+                                        clean,
+                                        inviting kiosks. Perfect for a quick bite, informal meeting, or a
+                                        cozy solo
+                                        meal.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-5">
+                                <div
+                                    class="flex-shrink-0 h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-2xl">desk</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold text-text-main dark:text-white mb-2">
+                                        Deliver-to-Desk
+                                    </h4>
+                                    <p class="text-text-sub dark:text-gray-400">Busy at work? Let MOPY come
+                                        to you. With
+                                        our Deliver-to-Desk facility, your meal arrives fresh, fast, and
+                                        perfectly
+                                        packed.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-12 sm:py-16 bg-text-main text-white dark:bg-black animate-on-scroll" id="business-model">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-3">OUR UNIQUE
+                        BUSINESS MODEL
+                    </h2>
+                    <h3 class="text-3xl sm:text-4xl 2xl:text-6xl font-bold text-white mb-4">Innovation driving Efficiency
+                    </h3>
+                    <p class="text-white/60 max-w-2xl 2xl:max-w-4xl mx-auto">We operate on a Hub & Spoke model that
+                        ensures
+                        consistency, quality, and cost efficiency.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-12">
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-colors">
+                        <div class="h-12 w-12 bg-primary rounded-xl flex items-center justify-center mb-6">
+                            <span class="material-symbols-outlined text-white">hub</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mb-4">Hub & Spoke Operations</h4>
+                        <ul class="space-y-4 text-white/70">
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>Central Kitchen (Hub):</strong> Prepares key menu items under
+                                    strict
+                                    quality standards.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>Distribution:</strong> Items sent to Spokes (Kiosks/Outlets)
+                                    in prime
+                                    complexes.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>Finishing:</strong> Final garnishing and plating at outlets
+                                    for
+                                    freshness.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-colors">
+                        <div class="h-12 w-12 bg-white/15 rounded-xl flex items-center justify-center mb-6">
+                            <span class="material-symbols-outlined text-white">smartphone</span>
+                        </div>
+                        <h4 class="text-2xl font-bold mb-4">Tech-Integrated Efficiency</h4>
+                        <ul class="space-y-4 text-white/70">
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>App-based Ordering:</strong> Quick, easy, and error-free
+                                    service.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>Real-time Management:</strong> Inventory and kitchen
+                                    tracking.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="material-symbols-outlined text-primary mt-1">check_circle</span>
+                                <span><strong>Automated Systems:</strong> Billing and tracking for speed and
+                                    clarity.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+      <section class="py-12 sm:py-16 lg:py-24 animate-on-scroll border-b border-border-subtle dark:border-white/10" id="promoter">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-sm font-bold tracking-widest text-primary uppercase mb-2">OUR LEADERSHIP & TEAM</h2>
+                    <h3 class="text-3xl font-bold text-text-main dark:text-white mb-4">The Minds Behind Mopy</h3>
+                </div>
+
+                <!-- CEO -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8 items-stretch">
+                    <div class="bg-surface-muted dark:bg-white/5 rounded-2xl p-6 border border-border-subtle flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left h-full">
+                     <div class="w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 aspect-square overflow-hidden">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/shravan.jpeg" class="w-full h-full object-cover shrink-0" alt="Shravan Kumar Bharati">
+                        </div>
+                        <div class="flex-1 w-full">
+                            <h4 class="text-base font-bold text-text-main dark:text-white">Sharwan Kumar Bharti</h4>
+                            <p class="text-xs text-primary font-bold mb-2">Chief Executive Officer</p>
+                            <p class="text-xs text-text-sub dark:text-gray-400 leading-normal">Directs tactical platform operational parameters, backend technology integrations, field deployment architectures, and corporate scaling profiles across core zones.</p>
+                        </div>
+                    </div>
+
+                    <!-- Food Technologist: Aayushi -->
+                    <div class="bg-surface-muted dark:bg-white/5 rounded-2xl p-6 border border-border-subtle flex flex-col sm:flex-row gap-5 items-center sm:items-start text-center sm:text-left h-full">
+                        <div class="w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 aspect-square overflow-hidden">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/ayushi.jpeg" class="w-full h-full object-cover" alt="Aayushi Tapan Pawaskar" onerror="this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-4xl text-text-sub/30\'>person</span>'">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-base font-bold text-text-main dark:text-white">Ayushi Tapan Pawaskar</h4>
+                            <p class="text-xs text-primary font-bold mb-2">Food Technologist</p>
+                            <p class="text-xs text-text-sub dark:text-gray-400 leading-normal">Drives nutritional compliance, ingredient quality benchmarks, and food science frameworks ensuring every Mopy product meets premium safety and taste standards.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assistant Manager & Head Chef row -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8 items-stretch">
+                    <!-- Head Chef -->
+                    <div class="bg-surface-muted dark:bg-white/5 rounded-2xl p-6 border border-border-subtle flex flex-col sm:flex-row gap-5 items-center sm:items-start text-center sm:text-left h-full">
+                        <div class="w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 aspect-square overflow-hidden">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/vinod.jpeg" class="w-full h-full object-cover" alt="Chef Vinod">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-base font-bold text-text-main dark:text-white">Vinod Goswami</h4>
+                            <p class="text-xs text-primary font-bold mb-2">Head Chef</p>
+                            <p class="text-xs text-text-sub dark:text-gray-400 leading-normal">Leads all culinary operations, menu development, taste profiling, and systematic recipe consistency across all Mopy outlets and the central hub kitchen.</p>
+                        </div>
+                    </div>
+                    <!-- Asst Manager Arvind -->
+                    <div class="bg-surface-muted dark:bg-white/5 rounded-2xl p-6 border border-border-subtle flex flex-col sm:flex-row gap-5 items-center sm:items-start text-center sm:text-left h-full">
+                        <div class="w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 aspect-square overflow-hidden">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/arvind.jpeg" class="w-full h-full object-cover" alt="Arvind">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-base font-bold text-text-main dark:text-white">Arvind</h4>
+                            <p class="text-xs text-primary font-bold mb-2">Assistant Manager</p>
+                            <p class="text-xs text-text-sub dark:text-gray-400 leading-normal">Manages daily operations, team coordination, and on-ground execution across kiosks, ensuring seamless service delivery and quality standards.</p>
+                        </div>
+                    </div>
+
+                    
+                    
+                </div>
+
+                <!-- Founder Row -->
+                <div class="grid md:grid-cols-2 gap-8 mb-12 items-stretch">
+                    <!-- Founder & CSO -->
+                    <div class="bg-surface-muted dark:bg-white/5 rounded-2xl p-6 border border-border-subtle flex flex-col sm:flex-row gap-5 items-center sm:items-start text-center sm:text-left h-full">
+                        <div class="w-32 h-32 rounded-xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center shrink-0 aspect-square overflow-hidden">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Lokendra.jpeg" class="w-full h-full object-cover" alt="Lokendra Singh Bhardwaj">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-base font-bold text-text-main dark:text-white">Lokendra Singh Bhardwaj</h4>
+                            <p class="text-xs text-primary font-bold mb-2">Founder & Chief Strategy Officer</p>
+                            <p class="text-xs text-text-sub dark:text-gray-400 leading-normal">A Hotel Management graduate and MBA professional with over 22 years of multi-format enterprise execution experience across corporate finance channels and active hospitality frameworks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Photo Section -->
+        <section class="py-16 lg:py-24 relative overflow-hidden bg-gradient-to-br from-[#2B1C17] via-[#3a1f16] to-[#1F1512]">
+            <!-- Decorative blobs -->
+            <div class="absolute -top-20 -left-20 w-80 h-80 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-orange-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+                    <!-- Left: Copy -->
+                    <div class="order-2 lg:order-1">
+                        <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold tracking-widest uppercase mb-6 border border-white/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                            The Mopy Family
+                        </span>
+                        <h3 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-6 leading-tight">
+                            People who power <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-primary">every meal.</span>
+                        </h3>
+                        <p class="text-white/70 text-lg leading-relaxed mb-8 max-w-md">
+                            Our passionate crew of chefs, service staff, and operations team show up every day to make sure your office gets the freshest, most consistent food experience possible.
+                        </p>
+                    </div>
+
+                    <!-- Right: Photo stack -->
+                    <div class="order-1 lg:order-2 flex flex-col gap-4">
+
+                        <!-- Main team photo -->
+                        <div class="relative w-full rounded-2xl overflow-hidden border-4 border-white/15"
+                             style="box-shadow: 0 30px 70px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);">
+                            <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Team.jpeg"
+                                 alt="The Mopy Team"
+                                 class="w-full h-auto block object-cover">
+                            <!-- Caption overlay -->
+                            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white font-bold text-sm leading-tight">Mopy Operations Team</p>
+                                        <p class="text-white/60 text-xs mt-0.5">Vadodara Central Hub · 2025</p>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1.5 border border-white/20">
+                                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                        <span class="text-white text-xs font-semibold">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Our Team badge -->
+                        <div class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-white/10 border border-white/20 self-start">
+                            <span class="material-symbols-outlined text-xl text-orange-300" style="font-variation-settings:'FILL' 1">groups</span>
+                            <span class="text-white font-bold text-sm tracking-widest uppercase">Our Team</span>
+                            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="py-12 sm:py-16 lg:py-24 pb-20 sm:pb-24 lg:pb-32 bg-primary text-white animate-on-scroll relative overflow-hidden"
+            id="franchise">
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-14 xl:gap-20 items-start">
+                    <div class="max-w-2xl">
+                        <h2 class="text-sm font-bold tracking-widest text-white/80 uppercase mb-3">FRANCHISE & PARTNER WITH US</h2>
+                        <h3 class="text-3xl sm:text-5xl font-bold mb-6">Invest in a Scalable, High-Efficiency Asset Model</h3>
+                        <p class="text-lg text-white/90 mb-8 leading-relaxed">
+                            MOPY offers premium enterprise investment frameworks for strategic scaling. Minimize execution risk using our company-managed infrastructure layouts.
+                        </p>
+
+                        <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 space-y-6">
+                            <div>
+                                <h4 class="font-bold text-xl text-white flex items-center gap-2 mb-2">
+                                    <span class="material-symbols-outlined">corporate_fare</span> FOCO Model Structure
+                                </h4>
+                                <p class="text-xs text-white/80 leading-relaxed">Franchise-Owned, Company-Operated. All system operations, inventory, and field management tasks are handled directly by corporate teams.</p>
+                            </div>
+                            
+                            <ul class="space-y-3 text-sm">
+                                <li class="flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-white shrink-0">check_circle</span>
+                                    <span><strong>Assured Return:</strong> Get <span class="font-extrabold text-yellow-300">18% assured annual return OR 50% of net profit — whichever is higher.</span></span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-white shrink-0">check_circle</span>
+                                    <span><strong>Operational Rigor:</strong> Powered by deep operational SOPs and highly process-driven tech workflows.</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-white shrink-0">check_circle</span>
+                                    <span><strong>Complete Accounting Access:</strong> Real-time automated daily P&L sharing, point-of-sale data, and continuous CCTV streams accessible via mobile application.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="w-full lg:pt-2 flex flex-col gap-5">
+                        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div class="rounded-2xl border border-white/20 bg-white text-text-main p-4 sm:p-5 shadow-xl">
+                                <span class="material-symbols-outlined text-primary text-2xl sm:text-3xl mb-3 sm:mb-4">trending_up</span>
+                                <p class="text-xl sm:text-2xl font-extrabold text-primary mb-1 leading-tight">18% Assured<br><span class="text-base font-bold text-text-sub">or 50% Net Profit</span></p>
+                                <h4 class="text-xs font-bold text-orange-500 mb-2 uppercase tracking-wider">Whichever is Higher</h4>
+                                <p class="hidden sm:block text-sm text-text-sub leading-relaxed">Contractually guaranteed minimum return with transparent profit sharing and company-led execution.</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/20 bg-white/15 backdrop-blur-sm p-4 sm:p-5">
+                                <span class="material-symbols-outlined text-white text-2xl sm:text-3xl mb-3 sm:mb-4">domain</span>
+                                <p class="text-2xl sm:text-3xl font-extrabold mb-1">FOCO</p>
+                                <h4 class="text-base font-bold mb-2">Managed Model</h4>
+                                <p class="hidden sm:block text-sm text-white/80 leading-relaxed">Inventory, staffing, kitchen control, and field operations remain centrally managed by MOPY.</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/20 bg-white/15 backdrop-blur-sm p-4 sm:p-5">
+                                <span class="material-symbols-outlined text-white text-2xl sm:text-3xl mb-3 sm:mb-4">analytics</span>
+                                <p class="text-2xl sm:text-3xl font-extrabold mb-1">Daily</p>
+                                <h4 class="text-base font-bold mb-2">P&L Access</h4>
+                                <p class="hidden sm:block text-sm text-white/80 leading-relaxed">Real-time sales, accounting, CCTV, and performance visibility through operational systems.</p>
+                            </div>
+                            <div class="rounded-2xl border border-white/20 bg-white text-text-main p-4 sm:p-5 shadow-xl">
+                                <span class="material-symbols-outlined text-primary text-2xl sm:text-3xl mb-3 sm:mb-4">storefront</span>
+                                <p class="text-2xl sm:text-3xl font-extrabold text-primary mb-1">Office</p>
+                                <h4 class="text-base font-bold mb-2">Demand Locations</h4>
+                                <p class="hidden sm:block text-sm text-text-sub leading-relaxed">Designed for dense workplaces where fast meals, reliable service, and repeat demand matter.</p>
+                            </div>
+                        </div>
+
+                        <!-- Gemini5 image + Form side by side -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-stretch">
+
+                            <!-- Gemini5 image — left, fixed width, fills height -->
+                            <div class="sm:w-[45%] rounded-2xl overflow-hidden border border-white/20 shadow-2xl shrink-0">
+                                <img src="https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Gemini5.png"
+                                     alt="Mopy Kiosk Franchise Model"
+                                     class="w-full h-full object-cover block">
+                            </div>
+
+                            <!-- Strategic Franchise Request Form — right -->
+                            <div class="flex-1 bg-white text-text-main rounded-3xl shadow-2xl p-5">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-primary text-xl">handshake</span>
+                                    <h4 class="font-extrabold text-base text-text-main">Strategic Franchise Request</h4>
+                                </div>
+                                <p class="text-xs text-text-sub mb-4">Fill in your details and a representative will reach out shortly.</p>
+                                <form class="space-y-3" onsubmit="event.preventDefault(); alert('Investment inquiry recorded successfully. A representative from the desk of Lokendra Singh Bhardwaj will reach out shortly.'); this.reset();">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-bold mb-1 text-text-main">Full Legal Name</label>
+                                            <input type="text" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="First and last name">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold mb-1 text-text-main">Contact Number</label>
+                                            <input type="tel" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="+91 XXXXX XXXXX">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold mb-1 text-text-main">Target Investment City / Complex Node</label>
+                                        <input type="text" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g. Vadodara Commercial Parks">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold mb-1 text-text-main">Strategic Framework Message</label>
+                                        <textarea class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" rows="3" placeholder="Note down any queries regarding the profit-sharing matrix..."></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full h-11 rounded-xl bg-primary text-white font-bold text-sm tracking-wide hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-500/20">
+                                        <span class="material-symbols-outlined text-base">send</span> Submit Strategic Franchise Request
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Testimonials Section -->
+        <section class="py-20 lg:py-28 relative overflow-hidden bg-background-light dark:bg-background-dark" id="testimonials">
+            <!-- Decorative background elements -->
+            <div class="absolute top-0 left-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-orange-400/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+            <!-- Large decorative quote mark -->
+            <div class="absolute top-10 right-10 text-primary/5 pointer-events-none select-none" style="font-size: 18rem; line-height: 1; font-family: Georgia, serif; font-weight: 900;">"</div>
+
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8 relative z-10">
+
+                <!-- Section Header -->
+                <div class="text-center mb-16 reveal-up">
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase mb-5 border border-primary/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                        What Our Customers Say
+                    </span>
+                    <h3 class="text-3xl sm:text-5xl font-extrabold text-text-main dark:text-white mb-5 leading-tight">
+                        Real words from <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">real offices</span>
+                    </h3>
+                    <p class="text-text-sub dark:text-gray-400 max-w-lg mx-auto text-lg">The voices of the people who fuel their workdays with MOPY.</p>
+                </div>
+
+                <!-- Testimonial Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 reveal-stagger">
+
+                    <!-- Card 1 - Featured (large) -->
+                    <div class="md:col-span-2 lg:col-span-1 group relative glass-card rounded-3xl p-8 lg:p-10 border border-border-subtle bg-white dark:bg-white/5 overflow-hidden">
+                        <!-- Accent top bar -->
+                        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-orange-400 rounded-t-3xl"></div>
+                        <!-- Quote icon -->
+                        <div class="flex items-start justify-between mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 18V10.8C0 9.12 0.34 7.58 1.02 6.18C1.7 4.76 2.62 3.54 3.78 2.52C4.96 1.5 6.3 0.74 7.8 0.24L9 2.76C7.76 3.28 6.7 4.06 5.82 5.1C4.96 6.14 4.52 7.3 4.5 8.58H9V18H0ZM13 18V10.8C13 9.12 13.34 7.58 14.02 6.18C14.7 4.76 15.62 3.54 16.78 2.52C17.96 1.5 19.3 0.74 20.8 0.24L22 2.76C20.76 3.28 19.7 4.06 18.82 5.1C17.96 6.14 17.52 7.3 17.5 8.58H22V18H13Z" fill="#ED1C24"/>
+                                </svg>
+                            </div>
+                            <!-- Stars -->
+                            <div class="flex gap-1">
+                                <span class="material-symbols-outlined text-yellow-400 text-lg" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-lg" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-lg" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-lg" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-lg" style="font-variation-settings:'FILL' 1">star</span>
+                            </div>
+                        </div>
+                        <p class="text-text-main dark:text-white text-lg lg:text-xl font-medium leading-relaxed mb-8 italic">
+                            "A perfect place for a daily refreshment in between busy office hours."
+                        </p>
+                        <!-- Author -->
+                        <div class="flex items-center gap-3 pt-6 border-t border-border-subtle dark:border-white/10">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center text-white font-bold text-sm shrink-0">O</div>
+                            <div>
+                                <p class="font-bold text-text-main dark:text-white text-sm">Priya Sharma</p>
+                                <p class="text-xs text-text-sub dark:text-gray-400">Marketing Executive</p>
+                            </div>
+                            <div class="ml-auto">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-200 dark:border-green-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Verified
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="group relative glass-card rounded-3xl p-7 border border-border-subtle bg-white dark:bg-white/5 overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 to-yellow-400 rounded-t-3xl"></div>
+                        <div class="flex items-start justify-between mb-5">
+                            <div class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center shrink-0">
+                                <svg width="18" height="14" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 18V10.8C0 9.12 0.34 7.58 1.02 6.18C1.7 4.76 2.62 3.54 3.78 2.52C4.96 1.5 6.3 0.74 7.8 0.24L9 2.76C7.76 3.28 6.7 4.06 5.82 5.1C4.96 6.14 4.52 7.3 4.5 8.58H9V18H0ZM13 18V10.8C13 9.12 13.34 7.58 14.02 6.18C14.7 4.76 15.62 3.54 16.78 2.52C17.96 1.5 19.3 0.74 20.8 0.24L22 2.76C20.76 3.28 19.7 4.06 18.82 5.1C17.96 6.14 17.52 7.3 17.5 8.58H22V18H13Z" fill="#F97316"/>
+                                </svg>
+                            </div>
+                            <div class="flex gap-1">
+                                <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                            </div>
+                        </div>
+                        <p class="text-text-main dark:text-white text-base font-medium leading-relaxed mb-6 italic">
+                            "Very reasonable pricing in menu as per the quality and variety provided by MOPY."
+                        </p>
+                        <div class="flex items-center gap-3 pt-5 border-t border-border-subtle dark:border-white/10">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center text-white font-bold text-xs shrink-0">R</div>
+                            <div>
+                                <p class="font-bold text-text-main dark:text-white text-sm">Rahul Mehta</p>
+                                <p class="text-xs text-text-sub dark:text-gray-400">Alembic Business Park</p>
+                            </div>
+                            <div class="ml-auto">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold border border-green-200 dark:border-green-500/20">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Verified
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 - Wide card -->
+                    <div class="md:col-span-2 group relative bg-gradient-to-br from-[#2B1C17] to-[#3d2218] rounded-3xl p-8 overflow-hidden border border-white/10" style="box-shadow: 0 20px 50px -10px rgba(43,28,23,0.35);">
+                        <!-- Background pattern -->
+                        <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle at 20px 20px, white 1px, transparent 0); background-size: 40px 40px;"></div>
+                        <div class="absolute -top-12 -right-12 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="relative z-10">
+                            <div class="flex flex-col sm:flex-row sm:items-start gap-6">
+                                <div class="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings:'FILL' 1">apartment</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex gap-1 mb-4">
+                                        <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                    </div>
+                                    <p class="text-white text-lg lg:text-xl font-medium leading-relaxed italic mb-6">
+                                        "We are thankful that MOPY is present in our office complex. We don't have to now wait for long to get food and also do not have to pay high delivery charges."
+                                    </p>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-sm shrink-0">A</div>
+                                        <div>
+                                            <p class="font-bold text-white text-sm">Ankit Desai</p>
+                                            <p class="text-xs text-white/50">IT Manager, Office Complex</p>
+                                        </div>
+                                        <div class="ml-auto hidden sm:flex items-center gap-2 bg-white/10 rounded-2xl px-4 py-2 border border-white/10">
+                                            <span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings:'FILL' 1">savings</span>
+                                            <span class="text-white text-xs font-bold">Zero Delivery Charges</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4 - Bottom full-width highlight -->
+                    <div class="md:col-span-2 group relative rounded-3xl overflow-hidden" style="background: linear-gradient(135deg, #FFF8F5 0%, #FEF0EB 50%, #FFF8F5 100%); border: 1px solid rgba(237,28,36,0.15); box-shadow: 0 8px 30px -5px rgba(237,28,36,0.08);">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-primary via-orange-400 to-yellow-400 rounded-l-3xl"></div>
+                        <div class="p-8 pl-10">
+                            <div class="flex flex-col lg:flex-row lg:items-center gap-6">
+                                <!-- Large decorative quote -->
+                                <div class="text-primary/15 shrink-0 hidden lg:block" style="font-size: 7rem; line-height: 0.8; font-family: Georgia, serif; font-weight: 900; margin-top: -1rem;">"</div>
+                                <div class="flex-1">
+                                    <div class="flex gap-1 mb-3">
+                                        <span class="material-symbols-outlined text-yellow-500 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-500 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-500 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-500 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-500 text-base" style="font-variation-settings:'FILL' 1">star</span>
+                                    </div>
+                                    <p class="text-text-main text-lg lg:text-xl font-semibold leading-relaxed italic mb-4">
+                                        "Thank you MOPY for such a consistent and good taste with quality and variety in food for regular office goers like us."
+                                    </p>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center text-white font-bold text-xs shrink-0">R</div>
+                                        <div>
+                                            <p class="font-bold text-text-main text-sm">Sneha Patel</p>
+                                            <p class="text-xs text-text-sub">Operations Executive</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Stats badge -->
+                                <div class="shrink-0 flex flex-col items-center justify-center bg-white rounded-2xl border border-border-subtle p-5 shadow-soft text-center min-w-[130px]">
+                                    <span class="text-3xl font-extrabold text-primary leading-none">4.9</span>
+                                    <div class="flex gap-0.5 my-1">
+                                        <span class="material-symbols-outlined text-yellow-400 text-sm" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-sm" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-sm" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-sm" style="font-variation-settings:'FILL' 1">star</span>
+                                        <span class="material-symbols-outlined text-yellow-400 text-sm" style="font-variation-settings:'FILL' 1">star</span>
+                                    </div>
+                                    <p class="text-xs text-text-sub font-semibold">Average Rating</p>
+                                    <p class="text-[10px] text-text-sub/70 mt-0.5">From our customers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom trust badge -->
+                <div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3 text-center reveal-up">
+                    <div class="flex -space-x-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-orange-400 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">P</div>
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-yellow-400 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">R</div>
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#2B1C17] to-[#7B5A50] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">A</div>
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-orange-400 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">S</div>
+                    </div>
+                    <p class="text-sm text-text-sub dark:text-gray-400">
+                        Loved by <span class="font-bold text-text-main dark:text-white">hundreds of office professionals</span> across Vadodara
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="py-12 bg-surface-muted dark:bg-white/5 border-t border-border-subtle dark:border-white/10 text-center">
+            <div class="mx-auto max-w-container px-4">
+                <span class="material-symbols-outlined text-4xl text-primary mb-4">location_on</span>
+                <h3 class="text-2xl font-bold text-text-main dark:text-white mb-2">FIND US</h3>
+                <p class="text-text-sub dark:text-gray-400 max-w-xl mx-auto mb-6">
+                    We’re expanding rapidly across prime business hubs and workplaces. Visit your nearest
+                    MOPY kiosk or order online.
+                </p>
+                <div class="inline-flex items-start gap-3 bg-white dark:bg-white/5 border border-border-subtle rounded-2xl px-6 py-4 text-left mb-6 shadow-soft max-w-md mx-auto">
+                    <span class="material-symbols-outlined text-primary text-2xl mt-0.5 shrink-0">factory</span>
+                    <div>
+                        <p class="text-xs font-bold text-primary uppercase tracking-widest mb-1">Central Kitchen (Hub)</p>
+                        <p class="text-sm font-semibold text-text-main dark:text-white">Mopy Central Kitchen</p>
+                        <p class="text-xs text-text-sub dark:text-gray-400 mt-0.5">C 15/68 Krishna Industrial Estate, Gorwa, Vadodara – 390003</p>
+                    </div>
+                </div>
+                <p class="text-xl font-bold text-primary font-display">✨ Eat Fresh. Feel Energized. Be MOPY.
+                </p>
+            </div>
+        </section>
+        <footer id="contact"
+            class="bg-surface-muted pt-12 sm:pt-16 pb-8 border-t border-border-subtle dark:bg-background-dark dark:border-white/10">
+            <div class="mx-auto max-w-container px-4 sm:px-6 lg:px-8">
+                <div class="grid gap-8 sm:gap-12 lg:grid-cols-4 md:grid-cols-2">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex h-8 w-8 items-center justify-center rounded bg-primary text-white">
+                                <span class="material-symbols-outlined text-[20px]">lunch_dining</span>
+                            </div>
+                            <span class="text-xl font-bold text-text-main dark:text-white">Mopy</span>
+                        </div>
+                        <p class="text-sm text-text-sub dark:text-gray-400">Smart food solutions for modern
+                            Indian
+                            offices. No corporate cafeteria? No problem.</p>
+                    </div>
+                    <div>
+                        <h4 class="mb-4 text-sm font-bold uppercase tracking-wider text-text-main dark:text-white">Connect Directly</h4>
+                        <ul class="flex flex-col gap-3 text-sm text-text-sub dark:text-gray-400">
+                            <li class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-primary text-sm">mail</span>
+                                <a href="mailto:connectmopy@gmail.com" class="hover:text-primary transition-colors">connectmopy@gmail.com</a>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-primary text-sm">phone</span>
+                                <a href="tel:+916359468677" class="hover:text-primary transition-colors">+91 6359468677</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="mb-4 text-sm font-bold uppercase tracking-wider text-text-main dark:text-white">
+                            Services</h4>
+                        <ul class="flex flex-col gap-3 text-sm text-text-sub dark:text-gray-400">
+                            <li><a class="hover:text-primary transition-colors" href="#business-model">Business
+                                    Model</a></li>
+                            <li><a class="hover:text-primary transition-colors" href="#clients">Clients</a></li>
+                            <li><a class="hover:text-primary transition-colors" href="#categories">Menu</a></li>
+                            <li><a class="hover:text-primary transition-colors" href="#">Gift Cards</a></li>
+                            <li><a class="hover:text-primary transition-colors" href="#franchise">Partner
+                                    with us</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="mb-4 text-sm font-bold uppercase tracking-wider text-text-main dark:text-white">
+                            Subscribe</h4>
+                        <p class="mb-4 text-sm text-text-sub dark:text-gray-400">Get the latest updates on
+                            new menus and
+                            features.</p>
+                        <div class="flex gap-2">
+                            <input
+                                class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all duration-200 focus:scale-105"
+                                placeholder="Enter your email" type="email" />
+                            <button
+                                class="h-10 rounded-lg bg-primary px-4 font-bold text-white hover:bg-primary-hover transition-all duration-200 hover:scale-105 btn-ripple">
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="mt-12 sm:mt-16 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 dark:border-white/10 sm:flex-row">
+                    <p class="text-sm text-text-sub dark:text-gray-500">© 2023 Mopy Inc. All rights
+                        reserved.</p>
+                    <div class="flex gap-6">
+                        <a class="text-gray-400 hover:text-primary transition-all duration-200 hover:scale-110"
+                            href="#"><span class="material-symbols-outlined text-xl">thumb_up</span></a>
+                        <a class="text-gray-400 hover:text-primary transition-all duration-200 hover:scale-110"
+                            href="#"><span class="material-symbols-outlined text-xl">share</span></a>
+                        <a class="text-gray-400 hover:text-primary transition-all duration-200 hover:scale-110"
+                            href="#"><span class="material-symbols-outlined text-xl">chat_bubble</span></a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Menu Download Lead Modal -->
+    <div id="menuLeadModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 rounded-3xl p-8 max-w-md w-full shadow-2xl relative animate-slide-up border border-border-subtle">
+            <button onclick="document.getElementById('menuLeadModal').classList.add('hidden')" class="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors text-text-sub">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-[20px]">restaurant_menu</span>
+                </div>
+                <h3 class="text-xl font-extrabold text-text-main dark:text-white">Download Full Menu</h3>
+            </div>
+            <p class="text-text-sub dark:text-gray-400 text-xs mb-6">Please share your name and phone number to download our complete menu PDF.</p>
+
+            <form id="menuLeadForm" class="space-y-4" onsubmit="handleMenuDownload(event)">
+                <div>
+                    <label class="block text-xs font-bold mb-1 text-text-main dark:text-gray-200">Full Name</label>
+                    <input type="text" id="lead_name" required class="w-full rounded-xl border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Your full name">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1 text-text-main dark:text-gray-200">Mobile Number</label>
+                    <input type="tel" id="lead_phone" required class="w-full rounded-xl border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="+91 XXXXX XXXXX">
+                </div>
+                <button type="submit" class="w-full h-12 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 text-sm">
+                    <span class="material-symbols-outlined text-base">download</span> Download Menu PDF
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vanilla-lazyload@17.8.3/dist/lazyload.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile menu functionality
+            const menuButton = document.getElementById('menuButton');
+            const sidebar = document.getElementById('sidebar');
+            const closeSidebar = document.getElementById('closeSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (menuButton && sidebar && closeSidebar && sidebarOverlay) {
+                function openSidebar() {
+                    sidebar.classList.add('open');
+                    sidebarOverlay.classList.remove('opacity-0', 'pointer-events-none');
+                    sidebarOverlay.classList.add('opacity-100');
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeSidebarMenu() {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.classList.add('opacity-0', 'pointer-events-none');
+                    sidebarOverlay.classList.remove('opacity-100');
+                    document.body.style.overflow = '';
+                }
+
+                menuButton.addEventListener('click', openSidebar);
+                closeSidebar.addEventListener('click', closeSidebarMenu);
+                sidebarOverlay.addEventListener('click', closeSidebarMenu);
+
+                // Close sidebar when clicking on navigation links
+                document.querySelectorAll('.sidebar-link').forEach(link => {
+                    link.addEventListener('click', closeSidebarMenu);
+                });
+
+                // Add touch gestures for mobile
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                document.addEventListener('touchstart', e => {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                document.addEventListener('touchend', e => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleGesture();
+                });
+
+                function handleGesture() {
+                    if (touchEndX < touchStartX - 50) {
+                        // Swipe left - close sidebar if open
+                        if (sidebar.classList.contains('open')) {
+                            closeSidebarMenu();
+                        }
+                    }
+
+                    if (touchEndX > touchStartX + 50) {
+                        // Swipe right - open sidebar if closed
+                        if (!sidebar.classList.contains('open') && touchStartX < 50) {
+                            openSidebar();
+                        }
+                    }
+                }
+            }
+
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    if (!href || href === '#') {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Intersection Observer for scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active'); // Use 'active' as per CSS
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all elements with animation classes
+            document.querySelectorAll('.reveal-up, .reveal-stagger, .animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Active navigation highlighting
+            function updateActiveNav() {
+                const sections = document.querySelectorAll('section[id]');
+                const navLinks = document.querySelectorAll('.nav-link, .sidebar-link');
+
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (window.scrollY >= sectionTop - 200) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('text-primary', 'font-bold');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('text-primary', 'font-bold');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveNav);
+            updateActiveNav(); // Initial check
+
+            // Form validation and submission
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const inputs = form.querySelectorAll('input[required]');
+                    let isValid = true;
+
+                    inputs.forEach(input => {
+                        if (!input.value.trim()) {
+                            isValid = false;
+                            input.classList.add('border-red-500');
+                            input.addEventListener('input', () => {
+                                input.classList.remove('border-red-500');
+                            });
+                        }
+                    });
+
+                    if (isValid) {
+                        const button = form.querySelector('button[type="submit"]');
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Sending...';
+                        button.disabled = true;
+
+                        setTimeout(() => {
+                            button.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Sent Successfully!';
+                            button.classList.remove('bg-primary', 'hover:bg-primary-hover');
+                            button.classList.add('success-state');
+
+                            setTimeout(() => {
+                                button.innerHTML = originalText;
+                                button.disabled = false;
+                                button.classList.remove('success-state');
+                                button.classList.add('bg-primary', 'hover:bg-primary-hover');
+                                form.reset();
+                            }, 2000);
+                        }, 1500);
+                    }
+                });
+            }
+
+            // Stagger animation to cards
+            const cards = document.querySelectorAll('.hover-lift');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Parallax effect for hero section
+            window.addEventListener('scroll', () => {
+                const scrolled = window.pageYOffset;
+                const parallax = document.querySelector('.hero-parallax');
+                if (parallax) {
+                    const speed = scrolled * 0.5;
+                    parallax.style.transform = `translateY(${speed}px)`;
+                }
+            });
+
+            // Hover effects to company logos
+            document.querySelectorAll('.company-logo').forEach(logo => {
+                logo.addEventListener('mouseenter', function () {
+                    this.style.transform = 'scale(1.1)';
+                    this.style.filter = 'grayscale(0%)';
+                });
+
+                logo.addEventListener('mouseleave', function () {
+                    this.style.transform = 'scale(1)';
+                    this.style.filter = 'grayscale(100%)';
+                });
+            });
+        });
+
+        // Menu PDF Download - gated by name & phone
+        function handleMenuDownload(event) {
+            event.preventDefault();
+            const name = document.getElementById('lead_name').value.trim();
+            const phone = document.getElementById('lead_phone').value.trim();
+
+            if (name && phone) {
+                const link = document.createElement('a');
+                link.href = "https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Mopy_Menu_Pamphlet__brochure (2).pdf.pdf.pdf";
+                link.target = "_blank";
+                link.rel = "noopener";
+                link.download = "Mopy_Menu.pdf";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                document.getElementById('menuLeadModal').classList.add('hidden');
+                document.getElementById('menuLeadForm').reset();
+            } else {
+                alert('Please enter your name and phone number to download the menu.');
+            }
+        }
+    </script>
+</body>
+
+</html>
