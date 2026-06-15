@@ -20,6 +20,7 @@ import reportRoutes from './routes/reports.js';
 import categoryRoutes from './routes/categories.js';
 import budgetRoutes from './routes/budgets.js';
 import paymentRoutes from './routes/payments.js';
+import leadRoutes from './routes/leads.js';
 
 // Load environment variables
 dotenv.config();
@@ -57,6 +58,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/leads', leadRoutes);
 
 // QR Code public endpoint (for scanning)
 app.get('/qr/:qrData', async (req, res) => {

@@ -27,6 +27,7 @@ import CategoryManagement from './pages/CategoryManagement';
 import BudgetConfig from './pages/BudgetConfig';
 import PaymentModule from './pages/PaymentModule';
 import CustomerOrderTracking from './pages/CustomerOrderTracking';
+import Leads from './pages/admin/leads/index';
 
 const App = () => {
   return (
@@ -242,6 +243,24 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Employee']}>
               <PaymentModule />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Leads Management - Company Admin / Admin */}
+        <Route
+          path="/admin/leads"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <Leads />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/leads/:tab"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <Leads />
             </ProtectedRoute>
           }
         />

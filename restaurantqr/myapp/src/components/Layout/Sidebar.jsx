@@ -33,6 +33,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     ...(user?.role === 'Admin' ? [{ icon: 'category', label: 'Category Management', path: '/categories' }] : []),
     ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'account_balance_wallet', label: 'Budget Config', path: '/budget-config' }] : []),
     ...(['Admin', 'Company Admin', 'Employee'].includes(user?.role) ? [{ icon: 'payments', label: 'Payments', path: '/payments' }] : []),
+    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'people_alt', label: 'Leads & Enquiries', path: '/admin/leads' }] : []),
     { icon: 'inventory_2', label: 'Inventory Management', path: '/inventory' },
     { icon: 'shopping_cart', label: 'Order Management', path: '/orders' },
     { icon: 'local_shipping', label: 'Delivery Dashboard', path: '/delivery' },

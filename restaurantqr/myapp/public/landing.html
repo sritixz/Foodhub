@@ -1474,24 +1474,24 @@
                                     <h4 class="font-extrabold text-base text-text-main">Strategic Franchise Request</h4>
                                 </div>
                                 <p class="text-xs text-text-sub mb-4">Fill in your details and a representative will reach out shortly.</p>
-                                <form class="space-y-3" onsubmit="event.preventDefault(); alert('Investment inquiry recorded successfully. A representative from the desk of Lokendra Singh Bhardwaj will reach out shortly.'); this.reset();">
+                                <form id="franchiseForm" class="space-y-3" onsubmit="handleFranchiseSubmit(event)">
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-xs font-bold mb-1 text-text-main">Full Legal Name</label>
-                                            <input type="text" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="First and last name">
+                                            <input type="text" id="franchise_name" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="First and last name">
                                         </div>
                                         <div>
                                             <label class="block text-xs font-bold mb-1 text-text-main">Contact Number</label>
-                                            <input type="tel" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="+91 XXXXX XXXXX">
+                                            <input type="tel" id="franchise_phone" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="+91 XXXXX XXXXX">
                                         </div>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold mb-1 text-text-main">Target Investment City / Complex Node</label>
-                                        <input type="text" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g. Vadodara Commercial Parks">
+                                        <input type="text" id="franchise_city" required class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="e.g. Vadodara Commercial Parks">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold mb-1 text-text-main">Strategic Framework Message</label>
-                                        <textarea class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" rows="3" placeholder="Note down any queries regarding the profit-sharing matrix..."></textarea>
+                                        <textarea id="franchise_message" class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" rows="3" placeholder="Note down any queries regarding the profit-sharing matrix..."></textarea>
                                     </div>
                                     <button type="submit" class="w-full h-11 rounded-xl bg-primary text-white font-bold text-sm tracking-wide hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-500/20">
                                         <span class="material-symbols-outlined text-base">send</span> Submit Strategic Franchise Request
@@ -1769,13 +1769,16 @@
                             features.</p>
                         <div class="flex gap-2">
                             <input
+                                id="subscribe_email"
                                 class="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-all duration-200 focus:scale-105"
                                 placeholder="Enter your email" type="email" />
                             <button
+                                onclick="handleNewsletterSubscribe()"
                                 class="h-10 rounded-lg bg-primary px-4 font-bold text-white hover:bg-primary-hover transition-all duration-200 hover:scale-105 btn-ripple">
                                 <span class="material-symbols-outlined text-lg">arrow_forward</span>
                             </button>
                         </div>
+                        <div id="subscribe_feedback" class="mt-2"></div>
                     </div>
                 </div>
                 <div
@@ -1952,7 +1955,7 @@
             updateActiveNav(); // Initial check
 
             // Form validation and submission
-            const form = document.querySelector('form');
+            const form = document.querySelector('form:not(#menuLeadForm):not(#franchiseForm)');
             if (form) {
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
@@ -2023,12 +2026,33 @@
         });
 
         // Menu PDF Download - gated by name & phone
+        const API_BASE = 'http://localhost:5000';
+
         function handleMenuDownload(event) {
             event.preventDefault();
             const name = document.getElementById('lead_name').value.trim();
             const phone = document.getElementById('lead_phone').value.trim();
+            const form = document.getElementById('menuLeadForm');
+            // Remove old messages
+            const oldMsg = form.querySelector('.form-message');
+            if (oldMsg) oldMsg.remove();
 
-            if (name && phone) {
+            if (!name || !phone) {
+                const msg = document.createElement('p');
+                msg.className = 'form-message text-red-500 text-xs mt-2';
+                msg.textContent = 'Please enter your name and phone number.';
+                form.appendChild(msg);
+                return;
+            }
+
+            fetch(API_BASE + '/api/leads/menu-lead', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to submit');
+                // Trigger PDF download
                 const link = document.createElement('a');
                 link.href = "https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Mopy_Menu_Pamphlet__brochure (2).pdf.pdf.pdf";
                 link.target = "_blank";
@@ -2039,10 +2063,84 @@
                 document.body.removeChild(link);
 
                 document.getElementById('menuLeadModal').classList.add('hidden');
-                document.getElementById('menuLeadForm').reset();
-            } else {
-                alert('Please enter your name and phone number to download the menu.');
+                form.reset();
+            })
+            .catch(() => {
+                const msg = document.createElement('p');
+                msg.className = 'form-message text-red-500 text-xs mt-2';
+                msg.textContent = 'Something went wrong, please try again.';
+                form.appendChild(msg);
+            });
+        }
+
+        function handleFranchiseSubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('franchiseForm');
+            const name = document.getElementById('franchise_name').value.trim();
+            const phone = document.getElementById('franchise_phone').value.trim();
+            const city = document.getElementById('franchise_city').value.trim();
+            const message = document.getElementById('franchise_message').value.trim();
+
+            // Remove old messages
+            const oldMsg = form.querySelector('.form-message');
+            if (oldMsg) oldMsg.remove();
+
+            if (!name || !phone || !city) {
+                const msg = document.createElement('p');
+                msg.className = 'form-message text-red-500 text-xs mt-2';
+                msg.textContent = 'Please fill in name, phone, and city.';
+                form.appendChild(msg);
+                return;
             }
+
+            fetch(API_BASE + '/api/leads/franchise-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, city, message })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to submit');
+                form.reset();
+                const msg = document.createElement('p');
+                msg.className = 'form-message text-green-600 text-xs mt-2 font-semibold';
+                msg.textContent = 'Request submitted successfully! A representative will reach out shortly.';
+                form.appendChild(msg);
+                setTimeout(() => msg.remove(), 5000);
+            })
+            .catch(() => {
+                const msg = document.createElement('p');
+                msg.className = 'form-message text-red-500 text-xs mt-2';
+                msg.textContent = 'Something went wrong, please try again.';
+                form.appendChild(msg);
+            });
+        }
+
+        function handleNewsletterSubscribe() {
+            const input = document.getElementById('subscribe_email');
+            const feedback = document.getElementById('subscribe_feedback');
+            const email = input.value.trim();
+            feedback.innerHTML = '';
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email || !emailRegex.test(email)) {
+                feedback.innerHTML = '<p class="text-red-500 text-xs">Please enter a valid email address.</p>';
+                return;
+            }
+
+            fetch(API_BASE + '/api/leads/newsletter-subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed');
+                input.value = '';
+                feedback.innerHTML = '<p class="text-green-500 text-xs font-semibold">You\'re subscribed!</p>';
+                setTimeout(() => { feedback.innerHTML = ''; }, 3000);
+            })
+            .catch(() => {
+                feedback.innerHTML = '<p class="text-red-500 text-xs">Something went wrong, try again.</p>';
+            });
         }
     </script>
 </body>
