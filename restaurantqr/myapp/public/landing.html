@@ -2045,32 +2045,29 @@
                 return;
             }
 
+            // Trigger PDF download immediately
+            const link = document.createElement('a');
+            link.href = "https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Mopy_Menu_Pamphlet__brochure%20(2).pdf.pdf.pdf";
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.download = "Mopy_Menu.pdf";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Close modal and reset
+            document.getElementById('menuLeadModal').classList.add('hidden');
+            form.reset();
+
+            // Show toast notification
+            showToast('Noted! Downloading menu…');
+
+            // Submit lead data in background (fire-and-forget)
             fetch(API_BASE + '/api/leads/menu-lead', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, phone })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to submit');
-                // Trigger PDF download
-                const link = document.createElement('a');
-                link.href = "https://raw.githubusercontent.com/sritixz/mopy_va/main/landing_page/Mopy_Menu_Pamphlet__brochure (2).pdf.pdf.pdf";
-                link.target = "_blank";
-                link.rel = "noopener";
-                link.download = "Mopy_Menu.pdf";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                document.getElementById('menuLeadModal').classList.add('hidden');
-                form.reset();
-            })
-            .catch(() => {
-                const msg = document.createElement('p');
-                msg.className = 'form-message text-red-500 text-xs mt-2';
-                msg.textContent = 'Something went wrong, please try again.';
-                form.appendChild(msg);
-            });
+            }).catch(() => {});
         }
 
         function handleFranchiseSubmit(event) {
@@ -2141,6 +2138,28 @@
             .catch(() => {
                 feedback.innerHTML = '<p class="text-red-500 text-xs">Something went wrong, try again.</p>';
             });
+        }
+    </script>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-none opacity-0 translate-y-4 transition-all duration-300">
+        <div class="flex items-center gap-3 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg font-semibold text-sm">
+            <span class="material-symbols-outlined text-base">check_circle</span>
+            <span id="toastMessage">Noted! Downloading menu…</span>
+        </div>
+    </div>
+
+    <script>
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            msgEl.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+            }, duration);
         }
     </script>
 </body>
