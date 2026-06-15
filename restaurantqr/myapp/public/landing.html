@@ -1979,17 +1979,10 @@
                         button.disabled = true;
 
                         setTimeout(() => {
-                            button.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Sent Successfully!';
-                            button.classList.remove('bg-primary', 'hover:bg-primary-hover');
-                            button.classList.add('success-state');
-
-                            setTimeout(() => {
-                                button.innerHTML = originalText;
-                                button.disabled = false;
-                                button.classList.remove('success-state');
-                                button.classList.add('bg-primary', 'hover:bg-primary-hover');
-                                form.reset();
-                            }, 2000);
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                            form.reset();
+                            showToast('Noted! Message sent successfully.');
                         }, 1500);
                     }
                 });
@@ -2098,17 +2091,10 @@
             .then(res => {
                 if (!res.ok) throw new Error('Failed to submit');
                 form.reset();
-                const msg = document.createElement('p');
-                msg.className = 'form-message text-green-600 text-xs mt-2 font-semibold';
-                msg.textContent = 'Request submitted successfully! A representative will reach out shortly.';
-                form.appendChild(msg);
-                setTimeout(() => msg.remove(), 5000);
+                showToast('Lead sent! A representative will reach out shortly.');
             })
             .catch(() => {
-                const msg = document.createElement('p');
-                msg.className = 'form-message text-red-500 text-xs mt-2';
-                msg.textContent = 'Something went wrong, please try again.';
-                form.appendChild(msg);
+                showToast('Something went wrong, please try again.');
             });
         }
 
@@ -2132,8 +2118,8 @@
             .then(res => {
                 if (!res.ok) throw new Error('Failed');
                 input.value = '';
-                feedback.innerHTML = '<p class="text-green-500 text-xs font-semibold">You\'re subscribed!</p>';
-                setTimeout(() => { feedback.innerHTML = ''; }, 3000);
+                feedback.innerHTML = '';
+                showToast('Noted! You\'re subscribed.');
             })
             .catch(() => {
                 feedback.innerHTML = '<p class="text-red-500 text-xs">Something went wrong, try again.</p>';
