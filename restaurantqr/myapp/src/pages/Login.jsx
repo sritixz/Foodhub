@@ -56,7 +56,7 @@ const Login = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary flex items-center justify-center gap-2 mb-2">
             <span className="material-icons-outlined text-4xl">restaurant</span>
-            FoodHub
+            Mopy
           </h1>
           <p className="text-slate-600 dark:text-slate-400">Sign in to your account</p>
         </div>

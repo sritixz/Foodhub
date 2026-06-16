@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       <div className="p-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
           <span className="material-icons-outlined text-3xl">restaurant</span>
-          FoodHub
+          Mopy
         </h1>
         <button
           onClick={onClose}
