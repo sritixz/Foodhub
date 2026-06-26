@@ -269,7 +269,9 @@ const MenuBrowse = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => navigate(`/menu/edit/${item._id}`)}
-                      className="p-2 text-slate-400 hover:text-primary transition-colors"
+                      className={`p-2 transition-colors ${item.status === 'Available' && user?.role === 'Vendor' ? 'text-slate-300 cursor-not-allowed' : 'text-slate-400 hover:text-primary'}`}
+                      disabled={item.status === 'Available' && user?.role === 'Vendor'}
+                      title={item.status === 'Available' && user?.role === 'Vendor' ? "Mark as unavailable to edit" : "Edit"}
                       aria-label="Edit"
                     >
                       <span className="material-icons-outlined text-sm">edit</span>

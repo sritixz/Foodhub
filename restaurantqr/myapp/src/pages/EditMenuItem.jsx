@@ -36,7 +36,7 @@ const EditMenuItem = () => {
       discount: 0,
     },
     vendor: '',
-    applyToAll: true,
+    applyToAll: false,
     outlets: []
   });
 
@@ -81,8 +81,8 @@ const EditMenuItem = () => {
           variants: menuItem.variants || [],
           promotions: menuItem.promotions || { enabled: false, discount: 0 },
           vendor: menuItem.vendor?._id || menuItem.vendor || '',
-          applyToAll: menuItem.applyToAll !== undefined ? menuItem.applyToAll : true,
-          outlets: menuItem.outlets?.map(o => o._id || o) || []
+          applyToAll: false,
+          outlets: []
         });
       } catch (error) {
         setError('Failed to load menu item');
@@ -116,15 +116,6 @@ const EditMenuItem = () => {
       ...prev,
       variants: [...prev.variants, { name: '', price: '' }]
     }));
-  };
-
-  const toggleOutlet = (outletId) => {
-    setFormData(prev => {
-      const updated = prev.outlets.includes(outletId)
-        ? prev.outlets.filter(id => id !== outletId)
-        : [...prev.outlets, outletId];
-      return { ...prev, outlets: updated };
-    });
   };
 
   const removeVariant = (index) => {
@@ -234,33 +225,6 @@ const EditMenuItem = () => {
                 onChange={(e) => handleInputChange('vendor', e.target.value)}
                 options={outlets.map(o => ({ value: o._id, label: o.name }))}
               />
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-medium">Apply to all outlets</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={formData.applyToAll}
-                    onChange={(e) => handleInputChange('applyToAll', e.target.checked)}
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary" />
-                </label>
-              </div>
-              {!formData.applyToAll && (
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {outlets.map(outlet => (
-                    <label key={outlet._id} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                      <input
-                        type="checkbox"
-                        className="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary"
-                        checked={formData.outlets.includes(outlet._id)}
-                        onChange={() => toggleOutlet(outlet._id)}
-                      />
-                      <span>{outlet.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
             </Card>
 
             {/* Item Details */}

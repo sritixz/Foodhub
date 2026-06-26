@@ -178,6 +178,16 @@ router.patch('/:id/status', authenticate, authorize('Vendor', 'Admin', 'Company 
 // Update menu item (protected - Vendor/Admin/Company Admin)
 router.put('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), validateCategory, async (req, res) => {
   try {
+    if (req.user.role === 'Vendor') {
+      const existingItem = await MenuItem.findById(req.params.id);
+      if (!existingItem) {
+        return res.status(404).json({ message: 'Menu item not found' });
+      }
+      if (existingItem.status === 'Available') {
+        return res.status(403).json({ message: 'Cannot edit an available item. Mark it unavailable first.' });
+      }
+    }
+
     const menuItem = await MenuItem.findByIdAndUpdate(
       req.params.id,
       req.body,
