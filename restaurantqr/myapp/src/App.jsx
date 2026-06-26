@@ -28,6 +28,7 @@ import BudgetConfig from './pages/BudgetConfig';
 import PaymentModule from './pages/PaymentModule';
 import CustomerOrderTracking from './pages/CustomerOrderTracking';
 import Leads from './pages/admin/leads/index';
+import VendorDailyLog from './pages/VendorDailyLog';
 
 const App = () => {
   return (
@@ -203,6 +204,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <VendorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/daily-log"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+              <VendorDailyLog />
             </ProtectedRoute>
           }
         />
