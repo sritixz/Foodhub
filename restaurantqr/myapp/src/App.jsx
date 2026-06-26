@@ -27,6 +27,7 @@ import CategoryManagement from './pages/CategoryManagement';
 import BudgetConfig from './pages/BudgetConfig';
 import PaymentModule from './pages/PaymentModule';
 import CustomerOrderTracking from './pages/CustomerOrderTracking';
+import CentralKitchenDispatch from './pages/admin/CentralKitchenDispatch';
 import DailyLedgerDashboard from './pages/admin/DailyLedgerDashboard';
 import Leads from './pages/admin/leads/index';
 import VendorDailyLog from './pages/VendorDailyLog';
@@ -185,6 +186,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
               <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dispatch"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <CentralKitchenDispatch />
             </ProtectedRoute>
           }
         />

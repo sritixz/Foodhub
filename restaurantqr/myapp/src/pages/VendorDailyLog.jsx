@@ -270,11 +270,10 @@ const VendorDailyLog = () => {
                       <td className="p-3 text-center">
                         <input
                           type="number"
-                          min="0"
                           value={item.sentQty}
-                          onChange={(e) => handleItemChange(index, 'sentQty', e.target.value)}
-                          className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                          placeholder="0"
+                          readOnly
+                          className="w-20 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-center text-gray-600 cursor-not-allowed"
+                          title="Sent quantity is logged by the Central Kitchen"
                         />
                       </td>
                       <td className="p-3 text-center font-medium text-primary bg-orange-50">{item.digitalSoldQty}</td>

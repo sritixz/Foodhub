@@ -158,4 +158,82 @@ router.post('/submit', authenticate, async (req, res) => {
   }
 });
 
+// @route   POST /api/ledger/dispatch
+// @desc    Central Kitchen dispatches sentQty to an outlet ledger
+// @access  Admin, Company Admin
+router.post('/dispatch', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+  try {
+    const { date, outlet, items } = req.body;
+    if (!date || !outlet || !items) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    let ledger = await DailyLedger.findOne({ date, outlet });
+    if (!ledger) {
+      // Create draft
+      ledger = new DailyLedger({
+        date,
+        outlet,
+        submittedBy: req.user.id,
+        items: items.map(i => ({
+          menuItem: i.menuItem,
+          sentQty: i.sentQty,
+          costPrice: i.costPrice || 0,
+          sellingPrice: i.sellingPrice || 0,
+        })),
+        status: 'Draft'
+      });
+    } else {
+      if (ledger.status === 'Approved') {
+         return res.status(400).json({ message: 'Cannot modify an approved ledger' });
+      }
+      // Update existing items
+      items.forEach(dispatchItem => {
+        const existingItemIndex = ledger.items.findIndex(i => i.menuItem.toString() === dispatchItem.menuItem.toString());
+        if (existingItemIndex > -1) {
+          ledger.items[existingItemIndex].sentQty = dispatchItem.sentQty;
+          // recalculate wastage/costing if needed
+          const totalSold = ledger.items[existingItemIndex].totalSoldQty || 0;
+          ledger.items[existingItemIndex].wastageQty = dispatchItem.sentQty - totalSold;
+          ledger.items[existingItemIndex].costing = dispatchItem.sentQty * ledger.items[existingItemIndex].costPrice;
+        } else {
+          ledger.items.push({
+            menuItem: dispatchItem.menuItem,
+            sentQty: dispatchItem.sentQty,
+            costPrice: dispatchItem.costPrice || 0,
+            sellingPrice: dispatchItem.sellingPrice || 0,
+            wastageQty: dispatchItem.sentQty,
+            costing: dispatchItem.sentQty * (dispatchItem.costPrice || 0)
+          });
+        }
+      });
+    }
+
+    // Recalculate totals
+    let totalRevenue = 0, totalCosting = 0, grossProfit = 0;
+    ledger.items.forEach(i => {
+      totalRevenue += i.revenue || 0;
+      totalCosting += i.costing || 0;
+      grossProfit += (i.revenue || 0) - (i.costing || 0);
+      i.grossProfit = (i.revenue || 0) - (i.costing || 0);
+    });
+
+    const totalExpenses = (ledger.expenses?.salary || 0) + (ledger.expenses?.transport || 0) + (ledger.expenses?.corp || 0) + (ledger.expenses?.other || 0);
+    
+    ledger.financials = {
+      totalRevenue,
+      totalCosting,
+      grossProfit,
+      indirectExpenses: totalExpenses,
+      netProfit: grossProfit - totalExpenses
+    };
+
+    await ledger.save();
+    res.json(ledger);
+  } catch (err) {
+    console.error('Error dispatching to ledger:', err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 export default router;
