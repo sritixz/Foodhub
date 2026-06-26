@@ -75,6 +75,10 @@ const menuItemSchema = new mongoose.Schema(
       enum: ['Unlimited', 'Limited per day'],
       default: 'Unlimited',
     },
+    costPrice: {
+      type: Number,
+      default: 0,
+    },
     basePrice: {
       type: Number,
       required: true,
