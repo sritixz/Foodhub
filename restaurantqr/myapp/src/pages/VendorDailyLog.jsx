@@ -44,11 +44,25 @@ const VendorDailyLog = () => {
     setError('');
     setSuccess('');
     try {
-      // 1. Fetch all menu items for this outlet
-      const menuRes = await api.get('/menu-items');
-      const outletMenu = menuRes.data.filter(
-        item => item.vendor?._id === selectedOutlet || item.outlets?.some(o => o._id === selectedOutlet) || item.applyToAll
-      );
+      // 1. Fetch daily menu for this outlet
+      const dailyMenuRes = await api.get(`/daily-menu?date=${date}&outletId=${selectedOutlet}`);
+      let outletMenu = [];
+      
+      if (dailyMenuRes.data && dailyMenuRes.data.meals) {
+         const meals = dailyMenuRes.data.meals;
+         const allItems = [...(meals.breakfast || []), ...(meals.lunch || []), ...(meals.fullMeal || []), ...(meals.snack || [])];
+         const uniqueMap = new Map();
+         allItems.forEach(i => {
+           if(i) uniqueMap.set(i._id, i);
+         });
+         outletMenu = Array.from(uniqueMap.values());
+      } else {
+         // Fallback to full catalog if daily menu isn't configured yet
+         const menuRes = await api.get('/menu-items');
+         outletMenu = menuRes.data.filter(
+           item => item.vendor?._id === selectedOutlet || item.outlets?.some(o => o._id === selectedOutlet) || item.applyToAll
+         );
+      }
 
       // 2. Fetch digital sales for today
       const salesRes = await api.get(`/ledger/calculate-sales?date=${date}&outletId=${selectedOutlet}`);

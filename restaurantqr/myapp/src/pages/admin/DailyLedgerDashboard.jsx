@@ -196,6 +196,7 @@ const DailyLedgerDashboard = () => {
                 { label: 'Salary Exp', category: 'expenses', field: 'salary', style: 'font-medium text-red-600', spanCol: 6, valColSpan: 1 },
                 { label: 'Transport Exp', category: 'expenses', field: 'transport', style: 'font-medium text-red-600', spanCol: 6, valColSpan: 1 },
                 { label: 'Corp Exp', category: 'expenses', field: 'corp', style: 'font-medium text-red-600', spanCol: 6, valColSpan: 1 },
+                { label: 'Other Exp', category: 'expenses', field: 'other', style: 'font-medium text-red-600', spanCol: 6, valColSpan: 1 },
                 { label: 'Indirect Exp Total', category: 'financials', field: 'indirectExpenses', style: 'font-bold text-red-700 bg-red-50', spanCol: 6, valColSpan: 1 },
                 { label: 'NET PROFIT (NP)', category: 'financials', field: 'netProfit', style: 'font-extrabold text-xl text-green-800 bg-green-100', spanCol: 6, valColSpan: 1 },
               ].map((row, idx) => (
