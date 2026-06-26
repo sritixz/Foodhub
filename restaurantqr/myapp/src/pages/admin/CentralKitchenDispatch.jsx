@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Layout from '../../components/Layout/Layout';
 import Card from '../../components/UI/Card';
 import Input from '../../components/UI/Input';
 import Button from '../../components/UI/Button';
 import api from '../../utils/api';
+import Papa from 'papaparse';
 
 const CentralKitchenDispatch = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -14,6 +15,7 @@ const CentralKitchenDispatch = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchOutlets();
@@ -134,12 +136,74 @@ const CentralKitchenDispatch = () => {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const csvContent = "Item Name,Sent Qty\n";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Dispatch_Template.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsedData = results.data;
+        const updatedItems = [...items];
+        let matchCount = 0;
+
+        parsedData.forEach(row => {
+          const itemName = row['Item Name']?.trim();
+          const sentQty = row['Sent Qty']?.trim();
+
+          if (itemName && sentQty !== undefined) {
+            const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
+            if (index !== -1) {
+              updatedItems[index].sentQty = sentQty;
+              matchCount++;
+            }
+          }
+        });
+
+        setItems(updatedItems);
+        setSuccess(`Successfully imported ${matchCount} items from CSV.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      },
+      error: (error) => {
+        setError('Error parsing CSV file: ' + error.message);
+      }
+    });
+  };
+
   return (
     <Layout>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Central Kitchen Dispatch</h1>
           <p className="text-gray-600">Log the sent quantity for each outlet to lock their EOD inventory.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={handleDownloadTemplate}>
+            Download Template
+          </Button>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef}
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            Import CSV
+          </Button>
         </div>
       </div>
 

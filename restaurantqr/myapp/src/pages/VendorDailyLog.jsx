@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout/Layout';
 import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import api from '../utils/api';
+import Papa from 'papaparse';
 import { useAuth } from '../context/AuthContext';
 
 const VendorDailyLog = () => {
@@ -16,6 +17,7 @@ const VendorDailyLog = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const fileInputRef = useRef(null);
   const [outlets, setOutlets] = useState([]);
   const [selectedOutlet, setSelectedOutlet] = useState(user?.outlet || '');
 
@@ -207,7 +209,7 @@ const VendorDailyLog = () => {
       };
 
       await api.post('/ledger/submit', payload);
-      setSuccess('Daily Ledger submitted successfully!');
+      setSuccess('End-of-Day Ledger successfully submitted!');
     } catch (err) {
       console.error(err);
       setError('Failed to submit ledger. ' + (err.response?.data?.message || err.message));
@@ -216,12 +218,74 @@ const VendorDailyLog = () => {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const csvContent = "Item Name,Manual Added Qty\n";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `EOD_Template.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsedData = results.data;
+        const updatedItems = [...items];
+        let matchCount = 0;
+
+        parsedData.forEach(row => {
+          const itemName = row['Item Name']?.trim();
+          const manualQty = row['Manual Added Qty']?.trim();
+
+          if (itemName && manualQty !== undefined) {
+            const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
+            if (index !== -1) {
+              updatedItems[index].counterSoldQty = manualQty;
+              matchCount++;
+            }
+          }
+        });
+
+        setItems(updatedItems);
+        setSuccess(`Successfully imported ${matchCount} items from CSV.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      },
+      error: (error) => {
+        setError('Error parsing CSV file: ' + error.message);
+      }
+    });
+  };
+
   return (
     <Layout>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Daily EOD Log</h1>
-          <p className="text-gray-600">Submit your daily inventory, counter sales, and expenses.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Vendor End-of-Day Log</h1>
+          <p className="text-gray-600">Review your daily sales, report wastages, and log collections.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="secondary" onClick={handleDownloadTemplate}>
+            Download Template
+          </Button>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef}
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            Import CSV
+          </Button>
         </div>
       </div>
 
