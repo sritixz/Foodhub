@@ -29,6 +29,7 @@ import PaymentModule from './pages/PaymentModule';
 import CustomerOrderTracking from './pages/CustomerOrderTracking';
 import CentralKitchenDispatch from './pages/admin/CentralKitchenDispatch';
 import DailyLedgerDashboard from './pages/admin/DailyLedgerDashboard';
+import CSVAnalysis from './pages/admin/CSVAnalysis';
 import Leads from './pages/admin/leads/index';
 import VendorDailyLog from './pages/VendorDailyLog';
 import DailyMenuSetup from './pages/admin/DailyMenuSetup';
@@ -203,6 +204,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
               <DailyLedgerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/csv-analysis"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <CSVAnalysis />
             </ProtectedRoute>
           }
         />
