@@ -56,7 +56,7 @@ const VendorDailyLog = () => {
 
       // 3. Initialize items state
       const initialItems = outletMenu.map(menuItem => {
-        const saleData = digitalSales.find(d => d._id === menuItem._id) || { digitalSoldQty: 0, digitalRevenue: 0 };
+        const saleData = digitalSales.find(d => d._id === menuItem._id) || { digitalSoldQty: 0, posSoldQty: 0, digitalRevenue: 0 };
         return {
           menuItem: menuItem._id,
           name: menuItem.name,
@@ -65,7 +65,8 @@ const VendorDailyLog = () => {
           sellingPrice: menuItem.basePrice || 0,
           sentQty: '',
           digitalSoldQty: saleData.digitalSoldQty,
-          counterSoldQty: '',
+          posSoldQty: saleData.posSoldQty,
+          counterSoldQty: '', // This will be the manual override/add-on
         };
       });
 
@@ -134,8 +135,10 @@ const VendorDailyLog = () => {
     try {
       const payloadItems = items.map(item => {
         const sent = Number(item.sentQty) || 0;
-        const counter = Number(item.counterSoldQty) || 0;
-        const totalSold = item.digitalSoldQty + counter;
+        const pos = Number(item.posSoldQty) || 0;
+        const manual = Number(item.counterSoldQty) || 0;
+        const totalCounter = pos + manual;
+        const totalSold = item.digitalSoldQty + totalCounter;
         const wastage = sent - totalSold;
         const revenue = totalSold * item.sellingPrice;
         const costing = sent * item.costPrice; // Or totalSold * cp depending on business logic, sticking to plan Sent * CP
@@ -147,7 +150,7 @@ const VendorDailyLog = () => {
           sellingPrice: item.sellingPrice,
           sentQty: sent,
           digitalSoldQty: item.digitalSoldQty,
-          counterSoldQty: counter,
+          counterSoldQty: totalCounter,
           totalSoldQty: totalSold,
           wastageQty: wastage,
           revenue,
@@ -250,14 +253,17 @@ const VendorDailyLog = () => {
                   <th className="p-3 font-medium text-gray-600 text-center">SP (₹)</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Sent Qty</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Digital Sold</th>
-                  <th className="p-3 font-medium text-gray-600 text-center">Counter Sold</th>
+                  <th className="p-3 font-medium text-gray-600 text-center">POS Sold</th>
+                  <th className="p-3 font-medium text-gray-600 text-center">Manual Added</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Wastage</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, index) => {
                   const sent = Number(item.sentQty) || 0;
-                  const totalSold = item.digitalSoldQty + (Number(item.counterSoldQty) || 0);
+                  const pos = Number(item.posSoldQty) || 0;
+                  const manual = Number(item.counterSoldQty) || 0;
+                  const totalSold = item.digitalSoldQty + pos + manual;
                   const wastage = sent - totalSold;
 
                   return (
@@ -277,6 +283,7 @@ const VendorDailyLog = () => {
                         />
                       </td>
                       <td className="p-3 text-center font-medium text-primary bg-orange-50">{item.digitalSoldQty}</td>
+                      <td className="p-3 text-center font-medium text-blue-600 bg-blue-50">{item.posSoldQty}</td>
                       <td className="p-3 text-center">
                         <input
                           type="number"

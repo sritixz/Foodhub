@@ -95,7 +95,12 @@ router.get('/calculate-sales', authenticate, async (req, res) => {
       {
         $group: {
           _id: "$items.menuItem",
-          digitalSoldQty: { $sum: "$items.quantity" },
+          digitalSoldQty: {
+            $sum: { $cond: [{ $eq: ["$orderType", "QR"] }, "$items.quantity", 0] }
+          },
+          posSoldQty: {
+            $sum: { $cond: [{ $in: ["$orderType", ["Retail", "Bulk"]] }, "$items.quantity", 0] }
+          },
           digitalRevenue: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
         }
       }
