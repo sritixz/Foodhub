@@ -55,12 +55,46 @@ const QRMenu = () => {
     filterItems();
   }, [menuItems, selectedCategory]);
 
+  const fetchDailyMenu = async (outletId) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await publicApi.get(`/daily-menu?date=${today}&outletId=${outletId}`);
+      if (res.data && res.data.meals) {
+        let dailyItems = [];
+        const { breakfast, lunch, fullMeal, snack } = res.data.meals;
+        
+        const addItems = (mealItems, mealName) => {
+          if (!mealItems) return;
+          mealItems.forEach(item => {
+            // Only add available items
+            if (item.status === 'Available') {
+              dailyItems.push({ ...item, category: mealName });
+            }
+          });
+        };
+
+        addItems(breakfast, 'Breakfast');
+        addItems(lunch, 'Lunch');
+        addItems(fullMeal, 'Full Meal');
+        addItems(snack, 'Snack');
+
+        return dailyItems.length > 0 ? dailyItems : null;
+      }
+    } catch (err) {
+      console.error('Error fetching daily menu:', err);
+    }
+    return null;
+  };
+
   const fetchQRData = async () => {
     try {
       setLoading(true);
       const qrResponse = await publicApi.get(`/qrcode/scan/${qrData}`);
-      setOutlet(qrResponse.data.outlet);
-      const items = qrResponse.data.menuItems || [];
+      const outletData = qrResponse.data.outlet;
+      setOutlet(outletData);
+      
+      const dailyItems = await fetchDailyMenu(outletData._id);
+      const items = dailyItems || qrResponse.data.menuItems || [];
       setMenuItems(items);
       buildCategories(items);
     } catch (error) {
@@ -84,10 +118,16 @@ const QRMenu = () => {
         setOutlet({ _id: id, name: 'Menu' });
       }
 
-      const menuResponse = await publicApi.get(`/menu-items/outlet/${id}`);
-      const items = menuResponse.data || [];
-      setMenuItems(items);
-      buildCategories(items);
+      const dailyItems = await fetchDailyMenu(id);
+      if (dailyItems) {
+        setMenuItems(dailyItems);
+        buildCategories(dailyItems);
+      } else {
+        const menuResponse = await publicApi.get(`/menu-items/outlet/${id}`);
+        const items = menuResponse.data || [];
+        setMenuItems(items);
+        buildCategories(items);
+      }
 
     } catch (error) {
       console.error('Error fetching menu:', error);

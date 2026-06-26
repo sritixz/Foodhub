@@ -31,6 +31,7 @@ import CentralKitchenDispatch from './pages/admin/CentralKitchenDispatch';
 import DailyLedgerDashboard from './pages/admin/DailyLedgerDashboard';
 import Leads from './pages/admin/leads/index';
 import VendorDailyLog from './pages/VendorDailyLog';
+import DailyMenuSetup from './pages/admin/DailyMenuSetup';
 
 const App = () => {
   return (
@@ -202,6 +203,14 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
               <DailyLedgerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/daily-menu"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+              <DailyMenuSetup />
             </ProtectedRoute>
           }
         />
