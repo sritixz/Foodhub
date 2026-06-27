@@ -4,7 +4,7 @@ import Card from '../../components/UI/Card';
 import Input from '../../components/UI/Input';
 import Button from '../../components/UI/Button';
 import api from '../../utils/api';
-import Papa from 'papaparse';
+import { parseImportFile } from '../../utils/fileParser';
 
 const CentralKitchenDispatch = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -148,39 +148,38 @@ const CentralKitchenDispatch = () => {
     document.body.removeChild(link);
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const parsedData = results.data;
-        const updatedItems = [...items];
-        let matchCount = 0;
+    setError('');
+    setSuccess('');
 
-        parsedData.forEach(row => {
-          const itemName = row['Item Name']?.trim();
-          const sentQty = row['Sent Qty']?.trim();
+    try {
+      const parsedData = await parseImportFile(file);
+      const updatedItems = [...items];
+      let matchCount = 0;
 
-          if (itemName && sentQty !== undefined) {
-            const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
-            if (index !== -1) {
-              updatedItems[index].sentQty = sentQty;
-              matchCount++;
-            }
+      parsedData.forEach(row => {
+        const itemName = row['Item Name'] !== undefined && row['Item Name'] !== null ? String(row['Item Name']).trim() : '';
+        const sentQtyVal = row['Sent Qty'];
+        const sentQty = sentQtyVal !== undefined && sentQtyVal !== null ? String(sentQtyVal).trim() : '';
+
+        if (itemName && sentQty !== '') {
+          const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
+          if (index !== -1) {
+            updatedItems[index].sentQty = sentQty;
+            matchCount++;
           }
-        });
+        }
+      });
 
-        setItems(updatedItems);
-        setSuccess(`Successfully imported ${matchCount} items from CSV.`);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      },
-      error: (error) => {
-        setError('Error parsing CSV file: ' + error.message);
-      }
-    });
+      setItems(updatedItems);
+      setSuccess(`Successfully imported ${matchCount} items.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      setError('Error parsing file: ' + err.message);
+    }
   };
 
   return (
@@ -196,13 +195,13 @@ const CentralKitchenDispatch = () => {
           </Button>
           <input 
             type="file" 
-            accept=".csv" 
+            accept=".csv,.xlsx,.xls" 
             ref={fileInputRef}
             onChange={handleFileUpload} 
             className="hidden" 
           />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            Import CSV
+            Import CSV/Excel
           </Button>
         </div>
       </div>

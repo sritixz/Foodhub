@@ -1,5 +1,6 @@
 import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate} from '../middleware/auth.js';
+import {authorize } from '../middleware/roleAuth.js';
 import DailyLedger from '../models/DailyLedger.js';
 import Order from '../models/Order.js';
 import MenuItem from '../models/MenuItem.js';

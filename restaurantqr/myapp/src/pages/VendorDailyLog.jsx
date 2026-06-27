@@ -4,7 +4,7 @@ import Card from '../components/UI/Card';
 import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import api from '../utils/api';
-import Papa from 'papaparse';
+import { parseImportFile } from '../utils/fileParser';
 import { useAuth } from '../context/AuthContext';
 
 const VendorDailyLog = () => {
@@ -230,39 +230,38 @@ const VendorDailyLog = () => {
     document.body.removeChild(link);
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const parsedData = results.data;
-        const updatedItems = [...items];
-        let matchCount = 0;
+    setError('');
+    setSuccess('');
 
-        parsedData.forEach(row => {
-          const itemName = row['Item Name']?.trim();
-          const manualQty = row['Manual Added Qty']?.trim();
+    try {
+      const parsedData = await parseImportFile(file);
+      const updatedItems = [...items];
+      let matchCount = 0;
 
-          if (itemName && manualQty !== undefined) {
-            const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
-            if (index !== -1) {
-              updatedItems[index].counterSoldQty = manualQty;
-              matchCount++;
-            }
+      parsedData.forEach(row => {
+        const itemName = row['Item Name'] !== undefined && row['Item Name'] !== null ? String(row['Item Name']).trim() : '';
+        const manualQtyVal = row['Manual Added Qty'];
+        const manualQty = manualQtyVal !== undefined && manualQtyVal !== null ? String(manualQtyVal).trim() : '';
+
+        if (itemName && manualQty !== '') {
+          const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
+          if (index !== -1) {
+            updatedItems[index].counterSoldQty = manualQty;
+            matchCount++;
           }
-        });
+        }
+      });
 
-        setItems(updatedItems);
-        setSuccess(`Successfully imported ${matchCount} items from CSV.`);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      },
-      error: (error) => {
-        setError('Error parsing CSV file: ' + error.message);
-      }
-    });
+      setItems(updatedItems);
+      setSuccess(`Successfully imported ${matchCount} items.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      setError('Error parsing file: ' + err.message);
+    }
   };
 
   return (
@@ -278,13 +277,13 @@ const VendorDailyLog = () => {
           </Button>
           <input 
             type="file" 
-            accept=".csv" 
+            accept=".csv,.xlsx,.xls" 
             ref={fileInputRef}
             onChange={handleFileUpload} 
             className="hidden" 
           />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            Import CSV
+            Import CSV/Excel
           </Button>
         </div>
       </div>

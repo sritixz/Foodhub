@@ -31,6 +31,9 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: 'handshake', label: 'Vendor Management', path: '/vendors' },
     { icon: 'menu_book', label: 'Menu & Catalog', path: '/menu/browse' },
     { icon: 'today', label: 'Daily Menu', path: '/admin/daily-menu' },
+    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'outbox', label: 'Kitchen Dispatch', path: '/admin/dispatch' }] : []),
+    ...(['Admin', 'Company Admin', 'Vendor'].includes(user?.role) ? [{ icon: 'assignment', label: 'Daily Log', path: '/vendor/daily-log' }] : []),
+    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'receipt_long', label: 'Daily Ledger', path: '/admin/daily-ledger' }] : []),
     ...(user?.role === 'Admin' ? [{ icon: 'category', label: 'Category Management', path: '/categories' }] : []),
     ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'account_balance_wallet', label: 'Budget Config', path: '/budget-config' }] : []),
     ...(['Admin', 'Company Admin', 'Employee'].includes(user?.role) ? [{ icon: 'payments', label: 'Payments', path: '/payments' }] : []),
@@ -42,6 +45,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { icon: 'warehouse', label: 'Warehouse Management', path: '/warehouse' },
     { icon: 'notifications', label: 'Notifications', path: '/notifications' },
     { icon: 'analytics', label: 'Reports & Analytics', path: '/reports' },
+    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'bar_chart', label: 'CSV Analysis', path: '/admin/csv-analysis' }] : []),
   ];
 
   const isActive = (path) => {
