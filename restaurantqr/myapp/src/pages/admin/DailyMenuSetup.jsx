@@ -6,6 +6,8 @@ import Button from '../../components/UI/Button';
 import api from '../../utils/api';
 
 const DailyMenuSetup = () => {
+  const [dateMode, setDateMode] = useState('weekday'); // 'weekday' or 'specific'
+  const [weekday, setWeekday] = useState('Monday');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [outlets, setOutlets] = useState([]);
   const [selectedOutlet, setSelectedOutlet] = useState('');
@@ -15,6 +17,8 @@ const DailyMenuSetup = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const activeKey = dateMode === 'weekday' ? weekday : date;
 
   useEffect(() => {
     fetchOutlets();
@@ -32,10 +36,10 @@ const DailyMenuSetup = () => {
   };
 
   useEffect(() => {
-    if (date && selectedOutlet) {
+    if (activeKey && selectedOutlet) {
       fetchData();
     }
-  }, [date, selectedOutlet]);
+  }, [activeKey, selectedOutlet]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -50,7 +54,7 @@ const DailyMenuSetup = () => {
       setMenuItems(outletCatalog);
 
       // Fetch existing daily menu
-      const dailyRes = await api.get(`/daily-menu?date=${date}&outletId=${selectedOutlet}`);
+      const dailyRes = await api.get(`/daily-menu?date=${activeKey}&outletId=${selectedOutlet}`);
       const selection = {};
       
       // Initialize selection
@@ -111,7 +115,7 @@ const DailyMenuSetup = () => {
         if (types.snack) meals.snack.push(itemId);
       });
 
-      await api.post('/daily-menu', { date, outlet: selectedOutlet, meals });
+      await api.post('/daily-menu', { date: activeKey, outlet: selectedOutlet, meals });
       setSuccess('Daily menu saved successfully!');
     } catch (err) {
       console.error(err);
@@ -126,25 +130,69 @@ const DailyMenuSetup = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Daily Menu Setup</h1>
-          <p className="text-gray-600">Configure which items from the catalog are available for each meal on a specific date.</p>
+          <p className="text-gray-600">Configure which items from the catalog are available for each meal by weekday or calendar date.</p>
         </div>
       </div>
 
       <Card className="mb-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          <Input
-            type="date"
-            label="Date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
+        <div className="flex flex-wrap gap-6 items-end">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Setup Mode</span>
+            <div className="flex border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setDateMode('weekday')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  dateMode === 'weekday'
+                    ? 'bg-primary text-white'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                Weekly Default
+              </button>
+              <button
+                type="button"
+                onClick={() => setDateMode('specific')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  dateMode === 'specific'
+                    ? 'bg-primary text-white'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                Specific Date
+              </button>
+            </div>
+          </div>
+
+          {dateMode === 'weekday' ? (
+            <div className="w-48">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Select Day</label>
+              <select
+                value={weekday}
+                onChange={(e) => setWeekday(e.target.value)}
+                className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+              >
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <Input
+              type="date"
+              label="Select Calendar Date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          )}
+
           <div className="w-64">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Target Outlet</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Target Outlet</label>
             <select
               value={selectedOutlet}
               onChange={(e) => setSelectedOutlet(e.target.value)}
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+              className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
             >
               {outlets.map(o => (
                 <option key={o._id} value={o._id}>{o.name}</option>

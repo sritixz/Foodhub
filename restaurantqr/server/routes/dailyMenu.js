@@ -14,23 +14,28 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ message: 'Date and outletId are required' });
     }
 
-    const dailyMenu = await DailyMenu.findOne({ date, outlet: outletId })
-      .populate({
-        path: 'meals.breakfast',
-        populate: { path: 'category', select: 'name description' }
-      })
-      .populate({
-        path: 'meals.lunch',
-        populate: { path: 'category', select: 'name description' }
-      })
-      .populate({
-        path: 'meals.fullMeal',
-        populate: { path: 'category', select: 'name description' }
-      })
-      .populate({
-        path: 'meals.snack',
-        populate: { path: 'category', select: 'name description' }
-      });
+    // 1. Try to find direct match (either date "YYYY-MM-DD" or day name "Monday")
+    let dailyMenu = await DailyMenu.findOne({ date, outlet: outletId });
+
+    // 2. If not found and date is a YYYY-MM-DD string, try to fallback to the day of week name
+    if (!dailyMenu && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayOfWeekName = days[d.getDay()];
+      
+      dailyMenu = await DailyMenu.findOne({ date: dayOfWeekName, outlet: outletId });
+    }
+
+    if (dailyMenu) {
+      // Populate meals and categories
+      await dailyMenu.populate([
+        { path: 'meals.breakfast', populate: { path: 'category', select: 'name description' } },
+        { path: 'meals.lunch', populate: { path: 'category', select: 'name description' } },
+        { path: 'meals.fullMeal', populate: { path: 'category', select: 'name description' } },
+        { path: 'meals.snack', populate: { path: 'category', select: 'name description' } }
+      ]);
+    }
 
     res.json(dailyMenu || null); // Return null if not found
   } catch (error) {

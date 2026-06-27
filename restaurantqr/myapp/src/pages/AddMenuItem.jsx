@@ -121,7 +121,7 @@ const AddMenuItem = () => {
         days: formData.days,
         stockType: formData.stockType,
         costPrice: parseFloat(formData.costPrice) || 0,
-        basePrice: parseFloat(formData.costPrice) || 0,
+        basePrice: parseFloat(formData.basePrice) || 0,
         variants: formData.variants.filter(v => v.name && v.price),
         promotions: formData.promotions,
         vendor: formData.vendor,
@@ -350,17 +350,32 @@ const AddMenuItem = () => {
                 </Button>
               </div>
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Cost Price</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
-                    <input
-                      className="w-full pl-8 pr-4 py-2 border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary"
-                      type="number"
-                      step="0.01"
-                      value={formData.costPrice}
-                      onChange={(e) => handleInputChange('costPrice', e.target.value)}
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Cost Price</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                      <input
+                        className="w-full pl-8 pr-4 py-2 border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary"
+                        type="number"
+                        step="0.01"
+                        value={formData.costPrice}
+                        onChange={(e) => handleInputChange('costPrice', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Selling Price (Base Price)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
+                      <input
+                        className="w-full pl-8 pr-4 py-2 border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary"
+                        type="number"
+                        step="0.01"
+                        value={formData.basePrice}
+                        onChange={(e) => handleInputChange('basePrice', e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                 {formData.variants.map((variant, idx) => (

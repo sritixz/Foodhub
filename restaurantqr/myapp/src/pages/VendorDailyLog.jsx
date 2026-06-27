@@ -154,17 +154,18 @@ const VendorDailyLog = () => {
         const pos = Number(item.posSoldQty) || 0;
         const manual = Number(item.counterSoldQty) || 0;
         const cp = Number(item.costPrice) || 0;
+        const sp = Number(item.sellingPrice) || 0;
         const totalCounter = pos + manual;
         const totalSold = item.digitalSoldQty + totalCounter;
         const wastage = sent - totalSold;
-        const revenue = totalSold * cp;
+        const revenue = totalSold * sp;
         const costing = sent * cp;
         const gp = revenue - costing;
         
         return {
           menuItem: item.menuItem,
           costPrice: cp,
-          sellingPrice: cp,
+          sellingPrice: sp,
           sentQty: sent,
           digitalSoldQty: item.digitalSoldQty,
           counterSoldQty: totalCounter,
@@ -332,6 +333,7 @@ const VendorDailyLog = () => {
                 <tr className="bg-gray-50 border-b">
                   <th className="p-3 font-medium text-gray-600">Item Name</th>
                   <th className="p-3 font-medium text-gray-600 text-center">CP (₹)</th>
+                  <th className="p-3 font-medium text-gray-600 text-center">SP (₹)</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Sent Qty</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Digital Sold</th>
                   <th className="p-3 font-medium text-gray-600 text-center">POS Sold</th>
@@ -364,6 +366,7 @@ const VendorDailyLog = () => {
                           placeholder="0"
                         />
                       </td>
+                      <td className="p-3 text-center text-gray-600">{item.sellingPrice}</td>
                       <td className="p-3 text-center">
                         <input
                           type="number"
