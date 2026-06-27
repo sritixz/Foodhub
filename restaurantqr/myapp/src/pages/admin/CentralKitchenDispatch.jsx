@@ -156,26 +156,11 @@ const CentralKitchenDispatch = () => {
     setSuccess('');
 
     try {
-      const parsedData = await parseImportFile(file);
-      const updatedItems = [...items];
-      let matchCount = 0;
-
-      parsedData.forEach(row => {
-        const itemName = row['Item Name'] !== undefined && row['Item Name'] !== null ? String(row['Item Name']).trim() : '';
-        const sentQtyVal = row['Sent Qty'];
-        const sentQty = sentQtyVal !== undefined && sentQtyVal !== null ? String(sentQtyVal).trim() : '';
-
-        if (itemName && sentQty !== '') {
-          const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
-          if (index !== -1) {
-            updatedItems[index].sentQty = sentQty;
-            matchCount++;
-          }
-        }
-      });
-
-      setItems(updatedItems);
-      setSuccess(`Successfully imported ${matchCount} items.`);
+      const result = await parseImportFile(file, items);
+      if (result.items) {
+        setItems(result.items);
+      }
+      setSuccess(`Successfully imported data from file (${result.matchCount} items matched).`);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       setError('Error parsing file: ' + err.message);

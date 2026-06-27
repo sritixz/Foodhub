@@ -94,7 +94,7 @@ const VendorDailyLog = () => {
           const mergedItems = initialItems.map(initItem => {
             const saved = savedItems.find(s => s.menuItem?._id === initItem.menuItem);
             if (saved) {
-              return { ...initItem, sentQty: saved.sentQty, counterSoldQty: saved.counterSoldQty };
+              return { ...initItem, sentQty: saved.sentQty, counterSoldQty: Math.max(0, (saved.counterSoldQty || 0) - (initItem.posSoldQty || 0)) };
             }
             return initItem;
           });
@@ -153,17 +153,18 @@ const VendorDailyLog = () => {
         const sent = Number(item.sentQty) || 0;
         const pos = Number(item.posSoldQty) || 0;
         const manual = Number(item.counterSoldQty) || 0;
+        const cp = Number(item.costPrice) || 0;
         const totalCounter = pos + manual;
         const totalSold = item.digitalSoldQty + totalCounter;
         const wastage = sent - totalSold;
-        const revenue = totalSold * item.sellingPrice;
-        const costing = sent * item.costPrice; // Or totalSold * cp depending on business logic, sticking to plan Sent * CP
+        const revenue = totalSold * cp;
+        const costing = sent * cp;
         const gp = revenue - costing;
         
         return {
           menuItem: item.menuItem,
-          costPrice: item.costPrice,
-          sellingPrice: item.sellingPrice,
+          costPrice: cp,
+          sellingPrice: cp,
           sentQty: sent,
           digitalSoldQty: item.digitalSoldQty,
           counterSoldQty: totalCounter,
@@ -238,26 +239,29 @@ const VendorDailyLog = () => {
     setSuccess('');
 
     try {
-      const parsedData = await parseImportFile(file);
-      const updatedItems = [...items];
-      let matchCount = 0;
+      const result = await parseImportFile(file, items);
+      
+      if (result.items) {
+        setItems(result.items);
+      }
+      
+      if (result.collections) {
+        setCollections(prev => ({
+          actualCash: result.collections.actualCash !== undefined ? result.collections.actualCash : prev.actualCash,
+          actualGpay: result.collections.actualGpay !== undefined ? result.collections.actualGpay : prev.actualGpay,
+        }));
+      }
+      
+      if (result.expenses) {
+        setExpenses(prev => ({
+          salary: result.expenses.salary !== undefined ? result.expenses.salary : prev.salary,
+          transport: result.expenses.transport !== undefined ? result.expenses.transport : prev.transport,
+          corp: result.expenses.corp !== undefined ? result.expenses.corp : prev.corp,
+          other: result.expenses.other !== undefined ? result.expenses.other : prev.other,
+        }));
+      }
 
-      parsedData.forEach(row => {
-        const itemName = row['Item Name'] !== undefined && row['Item Name'] !== null ? String(row['Item Name']).trim() : '';
-        const manualQtyVal = row['Manual Added Qty'];
-        const manualQty = manualQtyVal !== undefined && manualQtyVal !== null ? String(manualQtyVal).trim() : '';
-
-        if (itemName && manualQty !== '') {
-          const index = updatedItems.findIndex(i => i.name.toLowerCase() === itemName.toLowerCase());
-          if (index !== -1) {
-            updatedItems[index].counterSoldQty = manualQty;
-            matchCount++;
-          }
-        }
-      });
-
-      setItems(updatedItems);
-      setSuccess(`Successfully imported ${matchCount} items.`);
+      setSuccess(`Successfully imported data from file (${result.matchCount} items matched).`);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       setError('Error parsing file: ' + err.message);
@@ -327,7 +331,7 @@ const VendorDailyLog = () => {
               <thead>
                 <tr className="bg-gray-50 border-b">
                   <th className="p-3 font-medium text-gray-600">Item Name</th>
-                  <th className="p-3 font-medium text-gray-600 text-center">SP (₹)</th>
+                  <th className="p-3 font-medium text-gray-600 text-center">CP (₹)</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Sent Qty</th>
                   <th className="p-3 font-medium text-gray-600 text-center">Digital Sold</th>
                   <th className="p-3 font-medium text-gray-600 text-center">POS Sold</th>
@@ -349,7 +353,17 @@ const VendorDailyLog = () => {
                         <div className="font-medium text-gray-900">{item.name}</div>
                         <div className="text-xs text-gray-500">{item.category}</div>
                       </td>
-                      <td className="p-3 text-center text-gray-600">{item.sellingPrice}</td>
+                      <td className="p-3 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.costPrice}
+                          onChange={(e) => handleItemChange(index, 'costPrice', e.target.value)}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                          placeholder="0"
+                        />
+                      </td>
                       <td className="p-3 text-center">
                         <input
                           type="number"

@@ -29,6 +29,7 @@ const EditMenuItem = () => {
     days: [],
     timeSlots: [],
     stockType: 'Unlimited',
+    costPrice: 0,
     basePrice: 0,
     variants: [],
     promotions: {
@@ -77,6 +78,7 @@ const EditMenuItem = () => {
           days: menuItem.days || [],
           timeSlots: menuItem.timeSlots || [],
           stockType: menuItem.stockType || 'Unlimited',
+          costPrice: menuItem.costPrice || 0,
           basePrice: menuItem.basePrice || 0,
           variants: menuItem.variants || [],
           promotions: menuItem.promotions || { enabled: false, discount: 0 },
@@ -171,7 +173,8 @@ const EditMenuItem = () => {
         days: formData.days,
         timeSlots: formData.availabilityType === 'Custom Time Slots' ? formData.timeSlots.filter(s => s.start && s.end) : [],
         stockType: formData.stockType,
-        basePrice: parseFloat(formData.basePrice) || 0,
+        costPrice: parseFloat(formData.costPrice) || 0,
+        basePrice: parseFloat(formData.costPrice) || 0,
         variants: formData.variants.filter(v => v.name && v.price),
         promotions: formData.promotions,
         vendor: formData.vendor,
@@ -437,15 +440,15 @@ const EditMenuItem = () => {
               </div>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Base Price</label>
+                  <label className="block text-sm font-medium mb-1.5">Cost Price</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">₹</span>
                     <input
                       className="w-full pl-8 pr-4 py-2 border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary"
                       type="number"
                       step="0.01"
-                      value={formData.basePrice}
-                      onChange={(e) => handleInputChange('basePrice', e.target.value)}
+                      value={formData.costPrice}
+                      onChange={(e) => handleInputChange('costPrice', e.target.value)}
                     />
                   </div>
                 </div>
