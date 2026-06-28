@@ -82,7 +82,12 @@ const CentralKitchenDispatch = () => {
           const mergedItems = initialItems.map(initItem => {
             const saved = savedItems.find(s => s.menuItem?._id === initItem.menuItem);
             if (saved) {
-              return { ...initItem, sentQty: saved.sentQty };
+              return {
+                ...initItem,
+                costPrice: saved.costPrice !== undefined ? saved.costPrice : initItem.costPrice,
+                sellingPrice: saved.sellingPrice !== undefined ? saved.sellingPrice : initItem.sellingPrice,
+                sentQty: saved.sentQty
+              };
             }
             return initItem;
           });

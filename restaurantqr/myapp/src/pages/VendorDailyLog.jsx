@@ -96,7 +96,13 @@ const VendorDailyLog = () => {
           const mergedItems = initialItems.map(initItem => {
             const saved = savedItems.find(s => s.menuItem?._id === initItem.menuItem);
             if (saved) {
-              return { ...initItem, sentQty: saved.sentQty, counterSoldQty: Math.max(0, (saved.counterSoldQty || 0) - (initItem.posSoldQty || 0)) };
+              return {
+                ...initItem,
+                costPrice: saved.costPrice !== undefined ? saved.costPrice : initItem.costPrice,
+                sellingPrice: saved.sellingPrice !== undefined ? saved.sellingPrice : initItem.sellingPrice,
+                sentQty: saved.sentQty,
+                counterSoldQty: Math.max(0, (saved.counterSoldQty || 0) - (initItem.posSoldQty || 0))
+              };
             }
             return initItem;
           });
@@ -223,12 +229,58 @@ const VendorDailyLog = () => {
   };
 
   const handleDownloadTemplate = () => {
-    const csvContent = "Item Name,Manual Added Qty\n";
+    // Columns: Category, Item Name, CP, Sent, Sold, Wastage, SP, Revenue, Costing, NP
+    const csvRows = [];
+    
+    // Header Row 1 (date/day info like in Excel image, e.g. "Date, [date string], [day of week]")
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const d = new Date(date);
+    const dayOfWeek = days[isNaN(d.getDay()) ? 0 : d.getDay()];
+    csvRows.push(`Date,${date},${dayOfWeek},,,,,,,`);
+    
+    // Header Row 2: column labels
+    csvRows.push("Category,Item Name,CP,Sent,Sold,Wastage,SP,Revenue,Costing,NP");
+    
+    // Data Rows
+    items.forEach(item => {
+      const sent = Number(item.sentQty) || 0;
+      const pos = Number(item.posSoldQty) || 0;
+      const manual = Number(item.counterSoldQty) || 0;
+      const totalSold = (Number(item.digitalSoldQty) || 0) + pos + manual;
+      const wastage = sent - totalSold;
+      const cp = Number(item.costPrice) || 0;
+      const sp = Number(item.sellingPrice) || 0;
+      const revenue = totalSold * sp;
+      const costing = sent * cp;
+      const np = revenue - costing;
+      
+      const escapedName = item.name.includes(',') ? `"${item.name}"` : item.name;
+      const escapedCategory = item.category.includes(',') ? `"${item.category}"` : item.category;
+      
+      csvRows.push(`${escapedCategory},${escapedName},${cp},${sent},${totalSold},${wastage},${sp},${revenue},${costing},${np}`);
+    });
+    
+    // Add empty rows for spacing like in the Excel
+    csvRows.push(",,,,,,,,,");
+    csvRows.push(",,,,,,,,,");
+    
+    // Add summary fields at the bottom
+    const totalExpenses = (Number(expenses.salary) || 0) + (Number(expenses.transport) || 0) + (Number(expenses.corp) || 0) + (Number(expenses.other) || 0);
+    
+    csvRows.push(`Cash,,,,,Cash,${collections.actualCash || 0},,,`);
+    csvRows.push(`Gpay,,,,,Gpay,${collections.actualGpay || 0},,,`);
+    csvRows.push(`Salary,,,,,Salary,${expenses.salary || 0},,,`);
+    csvRows.push(`Transp,,,,,Transp,${expenses.transport || 0},,,`);
+    csvRows.push(`Corp,,,,,Corp,${expenses.corp || 0},,,`);
+    csvRows.push(`Other,,,,,Other,${expenses.other || 0},,,`);
+    csvRows.push(`Total Expenses,,,,,Indirect Exp,${totalExpenses},,,`);
+    
+    const csvContent = "\uFEFF" + csvRows.join("\n"); // \uFEFF for Excel UTF-8 compatibility
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `EOD_Template.csv`);
+    link.setAttribute('download', `Daily_Accounting_${date}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -284,7 +336,7 @@ const VendorDailyLog = () => {
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" onClick={handleDownloadTemplate}>
-            Download Template
+            Download CSV
           </Button>
           <input 
             type="file" 
