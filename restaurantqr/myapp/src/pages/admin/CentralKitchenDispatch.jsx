@@ -65,10 +65,34 @@ const CentralKitchenDispatch = () => {
          );
       }
 
+      const getMealCategoryOfItem = (menuItemId, catalogCategory) => {
+        if (dailyMenuRes.data && dailyMenuRes.data.meals) {
+          const meals = dailyMenuRes.data.meals;
+          const assigned = [];
+          const matchId = (ref) => {
+            const refId = ref && ref._id ? ref._id.toString() : (ref ? ref.toString() : '');
+            return refId === menuItemId?.toString();
+          };
+          if (meals.breakfast?.some(matchId)) assigned.push('Breakfast');
+          if (meals.lunch?.some(matchId)) assigned.push('Lunch');
+          if (meals.fullMeal?.some(matchId)) assigned.push('Full Meal');
+          if (meals.snack?.some(matchId)) assigned.push('Snack');
+          if (assigned.length > 0) return assigned.join(', ');
+        }
+
+        // Fallback mapping: convert any catalog category to daily menu slot
+        const cat = (catalogCategory || '').toLowerCase();
+        if (cat.includes('breakfast')) return 'Breakfast';
+        if (cat.includes('lunch')) return 'Lunch';
+        if (cat.includes('full') || cat.includes('meal') || cat.includes('course') || cat.includes('main')) return 'Lunch';
+        if (cat.includes('snack') || cat.includes('dessert') || cat.includes('sweet') || cat.includes('beverage') || cat.includes('tea') || cat.includes('appetiz') || cat.includes('light')) return 'Snack';
+        return 'Snack';
+      };
+
       const initialItems = outletMenu.map(menuItem => ({
         menuItem: menuItem._id,
         name: menuItem.name,
-        category: menuItem.category?.name || 'General',
+        category: getMealCategoryOfItem(menuItem._id, menuItem.category?.name),
         costPrice: menuItem.costPrice || 0,
         sellingPrice: menuItem.basePrice || 0,
         sentQty: '',
