@@ -15,6 +15,7 @@ const CentralKitchenDispatch = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [warning, setWarning] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ const CentralKitchenDispatch = () => {
     setLoading(true);
     setError('');
     setSuccess('');
+    setWarning('');
     try {
       // Fetch daily menu for this outlet
       const dailyMenuRes = await api.get(`/daily-menu?date=${date}&outletId=${selectedOutlet}`);
@@ -154,6 +156,7 @@ const CentralKitchenDispatch = () => {
 
     setError('');
     setSuccess('');
+    setWarning('');
 
     try {
       const result = await parseImportFile(file, items);
@@ -161,6 +164,9 @@ const CentralKitchenDispatch = () => {
         setItems(result.items);
       }
       setSuccess(`Successfully imported data from file (${result.matchCount} items matched).`);
+      if (result.unmatched && result.unmatched.length > 0) {
+        setWarning(`Warning: The following items from the file did not match any catalog items: ${result.unmatched.join(', ')}`);
+      }
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       setError('Error parsing file: ' + err.message);
@@ -218,6 +224,7 @@ const CentralKitchenDispatch = () => {
 
       {error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
       {success && <div className="p-4 mb-4 text-green-700 bg-green-100 rounded-lg">{success}</div>}
+      {warning && <div className="p-4 mb-4 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">{warning}</div>}
 
       {!loading && items.length > 0 && (
         <form onSubmit={handleSubmit}>

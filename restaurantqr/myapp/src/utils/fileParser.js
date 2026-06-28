@@ -22,11 +22,20 @@ export const parseImportFile = (file, currentItems = null) => {
       const updatedItems = [...currentItems];
       const collections = {};
       const expenses = {};
+      const unmatched = [];
       let matchCount = 0;
+
+      const excludeLabels = new Set([
+        'total', 'cash', 'gpay', 'google pay', 'online', 'salary', 'wage', 'wages',
+        'transp', 'transport', 'travel', 'corp', 'corporate', 'admin', 'other',
+        'misc', 'miscellaneous', 'food cost', 'gp', 'gross profit', 'indirect exp', 'np', 'net profit',
+        'item name', 'item_name', 'name', 'menu item', 'menu_item', 'menu items', 'items'
+      ]);
       
       rows.forEach(row => {
         // 1. Try to find if this row corresponds to a menu item
         let matchedItemIndex = -1;
+        let hasItemNameCandidate = null;
         
         for (const key in row) {
           const val = row[key];
@@ -35,6 +44,9 @@ export const parseImportFile = (file, currentItems = null) => {
             matchedItemIndex = updatedItems.findIndex(i => i.name.toLowerCase() === valTrimmed);
             if (matchedItemIndex !== -1) {
               break;
+            }
+            if (!excludeLabels.has(valTrimmed) && valTrimmed.length > 1) {
+              hasItemNameCandidate = val.trim();
             }
           }
         }
@@ -93,6 +105,19 @@ export const parseImportFile = (file, currentItems = null) => {
           if (hasUpdated) {
             matchCount++;
           }
+        } else if (hasItemNameCandidate) {
+          // Verify if row contains any valid numeric data to ensure it's a menu entry row
+          let hasNumericData = false;
+          for (const key in row) {
+            const val = row[key];
+            if (val !== undefined && val !== null && val !== '' && !isNaN(val)) {
+              hasNumericData = true;
+              break;
+            }
+          }
+          if (hasNumericData && !unmatched.includes(hasItemNameCandidate)) {
+            unmatched.push(hasItemNameCandidate);
+          }
         }
         
         // 2. Try to find collections and expenses in the row
@@ -144,7 +169,7 @@ export const parseImportFile = (file, currentItems = null) => {
         }
       });
       
-      return { items: updatedItems, collections, expenses, matchCount };
+      return { items: updatedItems, collections, expenses, matchCount, unmatched };
     };
 
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
