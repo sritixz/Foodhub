@@ -37,7 +37,7 @@ const EditMenuItem = () => {
       discount: 0,
     },
     vendor: '',
-    applyToAll: false,
+    applyToAll: true,
     outlets: []
   });
 
@@ -83,8 +83,8 @@ const EditMenuItem = () => {
           variants: menuItem.variants || [],
           promotions: menuItem.promotions || { enabled: false, discount: 0 },
           vendor: menuItem.vendor?._id || menuItem.vendor || '',
-          applyToAll: false,
-          outlets: []
+          applyToAll: menuItem.applyToAll !== undefined ? menuItem.applyToAll : true,
+          outlets: menuItem.outlets ? menuItem.outlets.map(o => o._id || o) : []
         });
       } catch (error) {
         setError('Failed to load menu item');
@@ -228,6 +228,50 @@ const EditMenuItem = () => {
                 onChange={(e) => handleInputChange('vendor', e.target.value)}
                 options={outlets.map(o => ({ value: o._id, label: o.name }))}
               />
+            </Card>
+
+            {/* Target Outlets */}
+            <Card title="Target Outlets">
+              <div className="space-y-4">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.applyToAll}
+                    onChange={(e) => handleInputChange('applyToAll', e.target.checked)}
+                    className="w-5 h-5 text-primary rounded border-slate-300 focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Make available at all outlets (Apply to All)
+                  </span>
+                </label>
+
+                {!formData.applyToAll && (
+                  <div className="mt-4 space-y-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Select Specific Outlets
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+                      {outlets.map((outlet) => (
+                        <label key={outlet._id} className="flex items-center space-x-3 cursor-pointer p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">
+                          <input
+                            type="checkbox"
+                            checked={formData.outlets.includes(outlet._id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const updatedOutlets = checked
+                                ? [...formData.outlets, outlet._id]
+                                : formData.outlets.filter(id => id !== outlet._id);
+                              handleInputChange('outlets', updatedOutlets);
+                            }}
+                            className="w-4.5 h-4.5 text-primary rounded border-slate-300 focus:ring-primary"
+                          />
+                          <span className="text-sm text-slate-600 dark:text-slate-300">{outlet.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
 
             {/* Item Details */}

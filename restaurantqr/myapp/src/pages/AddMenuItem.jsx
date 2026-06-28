@@ -34,7 +34,7 @@ const AddMenuItem = () => {
       discount: 0,
     },
     vendor: '',
-    applyToAll: false,
+    applyToAll: true,
     outlets: []
   });
 
@@ -156,40 +156,56 @@ const AddMenuItem = () => {
           <div className="lg:col-span-8 space-y-6">
             {/* Vendor Selection */}
             <Card>
-              <div className="relative">
-                <span className="material-icons-outlined absolute left-3 top-2.5 text-slate-400">search</span>
-                <input
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-800 rounded-lg focus:ring-primary focus:border-primary"
-                  placeholder="Search vendor..."
-                  type="text"
-                />
-              </div>
-              <div className="mt-6 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <span className="material-icons-outlined text-primary">storefront</span>
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold">{outlets[0]?.name || 'Select Vendor'}</h3>
-                      <span className="px-2 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-primary text-xs font-medium rounded">
-                        Cloud Kitchen
-                      </span>
+              <Select
+                label="Select Vendor"
+                value={formData.vendor}
+                onChange={(e) => handleInputChange('vendor', e.target.value)}
+                options={outlets.map(outlet => ({ label: outlet.name, value: outlet._id }))}
+                placeholder="Choose vendor"
+              />
+            </Card>
+
+            {/* Target Outlets */}
+            <Card title="Target Outlets">
+              <div className="space-y-4">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.applyToAll}
+                    onChange={(e) => handleInputChange('applyToAll', e.target.checked)}
+                    className="w-5 h-5 text-primary rounded border-slate-300 focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Make available at all outlets (Apply to All)
+                  </span>
+                </label>
+
+                {!formData.applyToAll && (
+                  <div className="mt-4 space-y-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Select Specific Outlets
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+                      {outlets.map((outlet) => (
+                        <label key={outlet._id} className="flex items-center space-x-3 cursor-pointer p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">
+                          <input
+                            type="checkbox"
+                            checked={formData.outlets.includes(outlet._id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const updatedOutlets = checked
+                                ? [...formData.outlets, outlet._id]
+                                : formData.outlets.filter(id => id !== outlet._id);
+                              handleInputChange('outlets', updatedOutlets);
+                            }}
+                            className="w-4.5 h-4.5 text-primary rounded border-slate-300 focus:ring-primary"
+                          />
+                          <span className="text-sm text-slate-600 dark:text-slate-300">{outlet.name}</span>
+                        </label>
+                      ))}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {outlets.length} Outlets • Active since Jan 2024
-                    </p>
                   </div>
-                </div>
-              </div>
-              <div className="mt-4">
-                <Select
-                  label="Select Vendor"
-                  value={formData.vendor}
-                  onChange={(e) => handleInputChange('vendor', e.target.value)}
-                  options={outlets.map(outlet => ({ label: outlet.name, value: outlet._id }))}
-                  placeholder="Choose vendor"
-                />
+                )}
               </div>
             </Card>
 
