@@ -33,6 +33,9 @@ const VendorDailyLog = () => {
       });
     } else if (user?.outlet) {
       setSelectedOutlet(user.outlet);
+      api.get(`/outlets/${user.outlet}`).then(res => {
+        setOutlets([res.data]);
+      }).catch(err => console.error(err));
     }
   }, [user]);
 
@@ -232,13 +235,19 @@ const VendorDailyLog = () => {
     // Columns: Category, Item Name, CP, Sent, Sold, Wastage, SP, Revenue, Costing, NP
     const csvRows = [];
     
+    const selectedOutletObj = outlets.find(o => o._id === selectedOutlet);
+    const outletName = selectedOutletObj ? selectedOutletObj.name : 'Outlet';
+
     // Header Row 1 (date/day info like in Excel image, e.g. "Date, [date string], [day of week]")
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const d = new Date(date);
     const dayOfWeek = days[isNaN(d.getDay()) ? 0 : d.getDay()];
     csvRows.push(`Date,${date},${dayOfWeek},,,,,,,`);
     
-    // Header Row 2: column labels
+    // Header Row 2 (outlet name)
+    csvRows.push(`Outlet,${outletName},,,,,,,,`);
+    
+    // Header Row 3: column labels
     csvRows.push("Category,Item Name,CP,Sent,Sold,Wastage,SP,Revenue,Costing,NP");
     
     // Data Rows
@@ -280,7 +289,11 @@ const VendorDailyLog = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `Daily_Accounting_${date}.csv`);
+    
+    const cleanOutletName = outletName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const filename = `daily_account_${date}_${cleanOutletName}.csv`;
+    link.setAttribute('download', filename);
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
