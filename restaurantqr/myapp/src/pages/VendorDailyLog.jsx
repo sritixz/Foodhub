@@ -21,6 +21,7 @@ const VendorDailyLog = () => {
   const fileInputRef = useRef(null);
   const [outlets, setOutlets] = useState([]);
   const [selectedOutlet, setSelectedOutlet] = useState(user?.outlet || '');
+  const [debugData, setDebugData] = useState(null);
 
   useEffect(() => {
     // If admin, fetch outlets to select from. Else just use their outlet.
@@ -327,12 +328,16 @@ const VendorDailyLog = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.log("[VendorDailyLog] File selected for upload:", file.name, "size:", file.size);
     setError('');
     setSuccess('');
     setWarning('');
 
     try {
+      console.log("[VendorDailyLog] Calling parseImportFile with items count:", items.length);
       const result = await parseImportFile(file, items);
+      console.log("[VendorDailyLog] parseImportFile raw result:", result);
+      setDebugData(result);
       
       if (result.items) {
         setItems(result.items);
@@ -364,6 +369,27 @@ const VendorDailyLog = () => {
     }
   };
 
+  const handleResetValues = () => {
+    // 1. Reset manual added qty for each item in state
+    setItems(prevItems => prevItems.map(item => ({
+      ...item,
+      counterSoldQty: 0
+    })));
+
+    // 2. Reset collections state
+    setCollections({ actualCash: '', actualGpay: '' });
+
+    // 3. Reset expenses state
+    setExpenses({ salary: '', transport: '', corp: '', other: '' });
+
+    // 4. Reset debugData (to hide debugger card)
+    setDebugData(null);
+
+    // Optional: show a confirmation banner
+    setSuccess('Cleared all manually entered sales, collections, and expense values.');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
   return (
     <Layout>
       <div className="flex justify-between items-center mb-6">
@@ -372,6 +398,9 @@ const VendorDailyLog = () => {
           <p className="text-gray-600">Review your daily sales, report wastages, and log collections.</p>
         </div>
         <div className="flex gap-3">
+          <Button variant="danger" onClick={handleResetValues}>
+            Reset Values
+          </Button>
           <Button variant="secondary" onClick={handleDownloadTemplate}>
             Download CSV
           </Button>
@@ -562,6 +591,22 @@ const VendorDailyLog = () => {
             </Button>
           </div>
         </form>
+      )}
+
+      {debugData && (
+        <Card className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Import Debugger (JSON)</h3>
+          <pre className="text-xs overflow-auto max-h-60 bg-gray-900 text-green-400 p-3 rounded">
+            {JSON.stringify({
+              matchCount: debugData.matchCount,
+              unmatchedCount: debugData.unmatched?.length,
+              unmatchedList: debugData.unmatched,
+              collections: debugData.collections,
+              expenses: debugData.expenses,
+              firstThreeRawRows: debugData.rawParsedRows?.slice(0, 3)
+            }, null, 2)}
+          </pre>
+        </Card>
       )}
     </Layout>
   );
