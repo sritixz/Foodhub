@@ -91,7 +91,7 @@ const UserManagement = () => {
     setFilteredUsers(filtered);
   }, [selectedRole, selectedStatus, selectedOutlet, searchTerm, users]);
 
-  const baseRoles = ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee'];
+  const baseRoles = ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee', 'Investor'];
   const allowedRoles = user?.role === 'Company Admin'
     ? ['Staff', 'Delivery Staff', 'Employee']
     : baseRoles;
@@ -110,6 +110,9 @@ const UserManagement = () => {
       outlet: '',
       password: '',
       status: 'Active',
+      investmentAmount: 0,
+      assuredReturnRate: 18,
+      profitSharePercentage: 50,
     });
   };
 
@@ -129,6 +132,9 @@ const UserManagement = () => {
       outlet: selectedUser.outlet?._id || selectedUser.outlet || '',
       password: '',
       status: selectedUser.status || 'Active',
+      investmentAmount: selectedUser.investmentAmount || 0,
+      assuredReturnRate: selectedUser.assuredReturnRate || 18,
+      profitSharePercentage: selectedUser.profitSharePercentage || 50,
     });
     setShowForm(true);
   };
@@ -164,6 +170,9 @@ const UserManagement = () => {
         organization: formData.organization || undefined,
         outlet: formData.outlet || null,
         status: formData.status,
+        investmentAmount: formData.role === 'Investor' ? Number(formData.investmentAmount) || 0 : undefined,
+        assuredReturnRate: formData.role === 'Investor' ? Number(formData.assuredReturnRate) || 0 : undefined,
+        profitSharePercentage: formData.role === 'Investor' ? Number(formData.profitSharePercentage) || 0 : undefined,
       };
 
       if (formData.password) {
@@ -448,6 +457,31 @@ const UserManagement = () => {
                   placeholder={editingUser ? 'Leave empty to keep current password' : 'Enter password'}
                   type="password"
                 />
+                {formData.role === 'Investor' && (
+                  <>
+                    <Input
+                      label="Investment Amount (₹)"
+                      value={formData.investmentAmount}
+                      onChange={(e) => handleFormChange('investmentAmount', e.target.value)}
+                      placeholder="e.g. 500000"
+                      type="number"
+                    />
+                    <Input
+                      label="Assured Return Rate (% per annum)"
+                      value={formData.assuredReturnRate}
+                      onChange={(e) => handleFormChange('assuredReturnRate', e.target.value)}
+                      placeholder="e.g. 18"
+                      type="number"
+                    />
+                    <Input
+                      label="Profit Share Percentage (%)"
+                      value={formData.profitSharePercentage}
+                      onChange={(e) => handleFormChange('profitSharePercentage', e.target.value)}
+                      placeholder="e.g. 50"
+                      type="number"
+                    />
+                  </>
+                )}
               </div>
             </div>
             <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3">
