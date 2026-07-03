@@ -33,6 +33,9 @@ import CSVAnalysis from './pages/admin/CSVAnalysis';
 import Leads from './pages/admin/leads/index';
 import VendorDailyLog from './pages/VendorDailyLog';
 import DailyMenuSetup from './pages/admin/DailyMenuSetup';
+import InvestorDashboard from './pages/InvestorDashboard';
+import InvestorPayouts from './pages/InvestorPayouts';
+import AdminInvestorLedger from './pages/admin/AdminInvestorLedger';
 
 const App = () => {
   return (
@@ -196,6 +199,30 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
               <CentralKitchenDispatch />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/investor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['Investor']}>
+              <InvestorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/investor/payouts"
+          element={
+            <ProtectedRoute allowedRoles={['Investor']}>
+              <InvestorPayouts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/investors"
+          element={
+            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+              <AdminInvestorLedger />
             </ProtectedRoute>
           }
         />

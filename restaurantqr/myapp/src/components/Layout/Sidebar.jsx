@@ -24,29 +24,33 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   };
 
-  const menuItems = [
+  const allMenuItems = [
     { icon: 'dashboard', label: 'Dashboard', path: '/' },
-    { icon: 'storefront', label: 'Outlet Management', path: '/outlets' },
-    { icon: 'group', label: 'User Management', path: '/users' },
-    { icon: 'handshake', label: 'Vendor Management', path: '/vendors' },
-    { icon: 'menu_book', label: 'Menu & Catalog', path: '/menu/browse' },
-    { icon: 'today', label: 'Daily Menu', path: '/admin/daily-menu' },
-    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'outbox', label: 'Kitchen Dispatch', path: '/admin/dispatch' }] : []),
-    ...(['Admin', 'Company Admin', 'Vendor'].includes(user?.role) ? [{ icon: 'assignment', label: 'Daily Log', path: '/vendor/daily-log' }] : []),
-    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'receipt_long', label: 'Daily Ledger', path: '/admin/daily-ledger' }] : []),
-    ...(user?.role === 'Admin' ? [{ icon: 'category', label: 'Category Management', path: '/categories' }] : []),
-    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'account_balance_wallet', label: 'Budget Config', path: '/budget-config' }] : []),
-    ...(['Admin', 'Company Admin', 'Employee'].includes(user?.role) ? [{ icon: 'payments', label: 'Payments', path: '/payments' }] : []),
-    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'people_alt', label: 'Leads & Enquiries', path: '/admin/leads' }] : []),
-    { icon: 'inventory_2', label: 'Inventory Management', path: '/inventory' },
-    { icon: 'shopping_cart', label: 'Order Management', path: '/orders' },
-    { icon: 'local_shipping', label: 'Delivery Dashboard', path: '/delivery' },
-    { icon: 'location_on', label: 'Location & Delivery', path: '/location-delivery' },
-    { icon: 'warehouse', label: 'Warehouse Management', path: '/warehouse' },
+    { icon: 'storefront', label: 'Outlet Management', path: '/outlets', roles: ['Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'group', label: 'User Management', path: '/users', roles: ['Admin', 'Company Admin'] },
+    { icon: 'handshake', label: 'Vendor Management', path: '/vendors', roles: ['Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'menu_book', label: 'Menu & Catalog', path: '/menu/browse', roles: ['Admin', 'Company Admin', 'Vendor', 'Staff', 'Employee'] },
+    { icon: 'today', label: 'Daily Menu', path: '/admin/daily-menu', roles: ['Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'outbox', label: 'Kitchen Dispatch', path: '/admin/dispatch', roles: ['Admin', 'Company Admin'] },
+    { icon: 'assignment', label: 'Daily Log', path: '/vendor/daily-log', roles: ['Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'receipt_long', label: 'Daily Ledger', path: '/admin/daily-ledger', roles: ['Admin', 'Company Admin'] },
+    { icon: 'monetization_on', label: 'Investor Ledger', path: '/admin/investors', roles: ['Admin', 'Company Admin'] },
+    { icon: 'category', label: 'Category Management', path: '/categories', roles: ['Admin'] },
+    { icon: 'account_balance_wallet', label: 'Budget Config', path: '/budget-config', roles: ['Admin', 'Company Admin'] },
+    { icon: 'payments', label: 'Payments', path: '/payments', roles: ['Admin', 'Company Admin', 'Employee'] },
+    { icon: 'payments', label: 'My Payouts', path: '/investor/payouts', roles: ['Investor'] },
+    { icon: 'people_alt', label: 'Leads & Enquiries', path: '/admin/leads', roles: ['Admin', 'Company Admin'] },
+    { icon: 'inventory_2', label: 'Inventory Management', path: '/inventory', roles: ['Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'shopping_cart', label: 'Order Management', path: '/orders', roles: ['Admin', 'Company Admin', 'Vendor', 'Staff'] },
+    { icon: 'local_shipping', label: 'Delivery Dashboard', path: '/delivery', roles: ['Delivery Staff', 'Admin', 'Company Admin', 'Vendor'] },
+    { icon: 'location_on', label: 'Location & Delivery', path: '/location-delivery', roles: ['Admin', 'Company Admin', 'Vendor', 'Delivery Staff'] },
+    { icon: 'warehouse', label: 'Warehouse Management', path: '/warehouse', roles: ['Admin', 'Company Admin', 'Vendor'] },
     { icon: 'notifications', label: 'Notifications', path: '/notifications' },
-    { icon: 'analytics', label: 'Reports & Analytics', path: '/reports' },
-    ...(['Admin', 'Company Admin'].includes(user?.role) ? [{ icon: 'bar_chart', label: 'CSV Analysis', path: '/admin/csv-analysis' }] : []),
+    { icon: 'analytics', label: 'Reports & Analytics', path: '/reports', roles: ['Admin', 'Company Admin', 'Vendor', 'Investor'] },
+    { icon: 'bar_chart', label: 'CSV Analysis', path: '/admin/csv-analysis', roles: ['Admin', 'Company Admin'] },
   ];
+
+  const menuItems = allMenuItems.filter(item => !item.roles || item.roles.includes(user?.role));
 
   const isActive = (path) => {
     if (path === '/') {

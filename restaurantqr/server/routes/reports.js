@@ -11,8 +11,8 @@ const router = express.Router();
 const getMatchByRole = (user, dateFilter) => {
   const match = {};
 
-  // Vendor sees only their own outlet's orders
-  if (user.role === 'Vendor' && user.outlet) {
+  // Vendor and Investor see only their own outlet's orders
+  if (['Vendor', 'Investor'].includes(user.role) && user.outlet) {
     match.vendor = new mongoose.Types.ObjectId(user.outlet.toString());
   }
   // Company Admin and Admin see all orders across all outlets
@@ -59,7 +59,7 @@ const parseDateRange = (query) => {
 };
 
 // Summary report
-router.get('/summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+router.get('/summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Investor'), async (req, res) => {
   try {
     const dateFilter = parseDateRange(req.query);
     const match = getMatchByRole(req.user, dateFilter);
@@ -126,7 +126,7 @@ router.get('/summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor
 });
 
 // Orders per day (daily trend)
-router.get('/daily-orders', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+router.get('/daily-orders', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Investor'), async (req, res) => {
   try {
     const { days = 14 } = req.query;
     const daysBack = parseInt(days);
@@ -212,7 +212,7 @@ router.get('/revenue-by-outlet', authenticate, authorize('Admin', 'Company Admin
 });
 
 // Orders by type breakdown
-router.get('/order-types', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+router.get('/order-types', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Investor'), async (req, res) => {
   try {
     const dateFilter = parseDateRange(req.query);
     const match = getMatchByRole(req.user, dateFilter);
@@ -241,7 +241,7 @@ router.get('/order-types', authenticate, authorize('Admin', 'Company Admin', 'Ve
 });
 
 // Export orders as CSV
-router.get('/export/csv', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+router.get('/export/csv', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Investor'), async (req, res) => {
   try {
     const dateFilter = parseDateRange(req.query);
     const match = getMatchByRole(req.user, dateFilter);
@@ -280,7 +280,7 @@ router.get('/export/csv', authenticate, authorize('Admin', 'Company Admin', 'Ven
 });
 
 // Payment summary — revenue by status, avg value, cancellation rate
-router.get('/payment-summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+router.get('/payment-summary', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Investor'), async (req, res) => {
   try {
     const dateFilter = parseDateRange(req.query);
     const match = getMatchByRole(req.user, dateFilter);
