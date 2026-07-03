@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee'],
+      enum: ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee', 'Investor'],
       required: true,
     },
     outlet: {
@@ -50,6 +50,18 @@ const userSchema = new mongoose.Schema(
     deliveryNotes: {
       type: String,
       default: null,
+    },
+    investmentAmount: {
+      type: Number,
+      default: 0,
+    },
+    assuredReturnRate: {
+      type: Number,
+      default: 18, // percentage (e.g. 18 = 18%)
+    },
+    profitSharePercentage: {
+      type: Number,
+      default: 50, // percentage (e.g. 50 = 50%)
     },
   },
   {
