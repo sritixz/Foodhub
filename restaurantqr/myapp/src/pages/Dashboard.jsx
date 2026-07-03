@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import Layout from '../components/Layout/Layout';
 import Card from '../components/UI/Card';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+    const { user } = useAuth();
+    if (user?.role === 'Investor') {
+        return <Navigate to="/investor/dashboard" replace />;
+    }
     const [outlets, setOutlets] = useState([]);
     const [stats, setStats] = useState({
         totalRevenue: 0,
