@@ -4,6 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Outlet from '../models/Outlet.js';
 import connectDB from '../config/database.js';
 import userRoutes from './users.js';
 
@@ -47,6 +48,7 @@ async function runTests() {
       .set('Authorization', `Bearer ${ownerToken}`);
     console.log(`Status: ${res.status}`);
     if (res.status !== 200 || !Array.isArray(res.body)) {
+      console.error('Error Body:', res.body);
       throw new Error(`Expected 200 OK and array of users, got status ${res.status}`);
     }
     console.log(`✓ Owner successfully retrieved ${res.body.length} users.`);
