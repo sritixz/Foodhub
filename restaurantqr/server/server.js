@@ -24,6 +24,7 @@ import leadRoutes from './routes/leads.js';
 import ledgerRoutes from './routes/ledger.js';
 import dailyMenuRoutes from './routes/dailyMenu.js';
 import investorRoutes from './routes/investors.js';
+import makerCheckerRoutes from './routes/makerCheckerRoutes.js';
 // Load environment variables
 dotenv.config();
 
@@ -64,6 +65,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/daily-menu', dailyMenuRoutes);
 app.use('/api/investors', investorRoutes);
+app.use('/api/maker-checker', makerCheckerRoutes);
 // QR Code public endpoint (for scanning)
 app.get('/qr/:qrData', async (req, res) => {
   try {
