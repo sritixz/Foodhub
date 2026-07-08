@@ -24,10 +24,23 @@ export const authAndAuthorize = (...roles) => {
 };
 
 // Convenience middleware for common role combinations
-export const adminOnly = authAndAuthorize('Admin');
-export const companyAdminOrAdmin = authAndAuthorize('Admin', 'Company Admin');
-export const vendorOnly = authAndAuthorize('Vendor');
-export const deliveryStaffOnly = authAndAuthorize('Delivery Staff');
-export const employeeOrStaff = authAndAuthorize('Employee', 'Staff');
+export const ownerOnly = authAndAuthorize('Owner');
+export const adminOnly = ownerOnly; // Legacy alias
+
+export const managementOrOwner = authAndAuthorize('Owner', 'Management');
+export const companyAdminOrAdmin = managementOrOwner; // Legacy alias
+
+export const outletSalesRepresentativeOnly = authAndAuthorize('Outlet Sales Representative');
+export const vendorOnly = outletSalesRepresentativeOnly; // Legacy alias
+
+export const driverOnly = authAndAuthorize('Driver');
+export const deliveryStaffOnly = driverOnly; // Legacy alias
+
+export const customerOnly = authAndAuthorize('Customer');
+export const employeeOrStaff = authAndAuthorize('Customer', 'Outlet Sales Representative'); // Legacy alias mapping
+
+export const centralKitchenManagerOnly = authAndAuthorize('Central Kitchen Manager');
+export const investmentPartnerOnly = authAndAuthorize('Investment Partner');
+export const nonCoreStaffOnly = authAndAuthorize('Non-Core Staff');
 
 export default authorize;

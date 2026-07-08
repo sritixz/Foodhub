@@ -5,10 +5,10 @@ import authenticate from '../middleware/auth.js';
 import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
-const COMPANY_ADMIN_ALLOWED_ROLES = ['Employee', 'Staff', 'Delivery Staff'];
+const MANAGEMENT_ALLOWED_ROLES = ['Outlet Sales Representative', 'Driver', 'Customer'];
 
-const applyCompanyAdminScope = (query, user) => {
-  if (user.role !== 'Company Admin') {
+const applyManagementScope = (query, user) => {
+  if (user.role !== 'Management') {
     return query;
   }
 
@@ -19,12 +19,12 @@ const applyCompanyAdminScope = (query, user) => {
   return {
     ...query,
     organization: user.organization,
-    role: { $in: COMPANY_ADMIN_ALLOWED_ROLES },
+    role: { $in: MANAGEMENT_ALLOWED_ROLES },
   };
 };
 
-const ensureCompanyAdminAccess = (targetUser, currentUser) => {
-  if (currentUser.role !== 'Company Admin') {
+const ensureManagementAccess = (targetUser, currentUser) => {
+  if (currentUser.role !== 'Management') {
     return { allowed: true };
   }
 
@@ -36,15 +36,15 @@ const ensureCompanyAdminAccess = (targetUser, currentUser) => {
     return { allowed: false, message: 'Access denied' };
   }
 
-  if (!COMPANY_ADMIN_ALLOWED_ROLES.includes(targetUser.role)) {
+  if (!MANAGEMENT_ALLOWED_ROLES.includes(targetUser.role)) {
     return { allowed: false, message: 'Access denied' };
   }
 
   return { allowed: true };
 };
 
-// Get all users (protected - Admin/Company Admin)
-router.get('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Get all users (protected - Owner/Management)
+router.get('/', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { role, status, outlet } = req.query;
     let query = {};
@@ -53,7 +53,7 @@ router.get('/', authenticate, authorize('Admin', 'Company Admin'), async (req, r
     if (status) query.status = status;
     if (outlet) query.outlet = outlet;
 
-    query = applyCompanyAdminScope(query, req.user);
+    query = applyManagementScope(query, req.user);
 
     const users = await User.find(query)
       .populate('outlet', 'name outletId')
@@ -68,8 +68,8 @@ router.get('/', authenticate, authorize('Admin', 'Company Admin'), async (req, r
 // Get single user (protected)
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    // Users can view their own profile, Admin/Company Admin can view any
-    if (req.user._id.toString() !== req.params.id && !['Admin', 'Company Admin'].includes(req.user.role)) {
+    // Users can view their own profile, Owner/Management can view any
+    if (req.user._id.toString() !== req.params.id && !['Owner', 'Management'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -80,8 +80,8 @@ router.get('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (req.user.role === 'Company Admin' && req.user._id.toString() !== req.params.id) {
-      const access = ensureCompanyAdminAccess(user, req.user);
+    if (req.user.role === 'Management' && req.user._id.toString() !== req.params.id) {
+      const access = ensureManagementAccess(user, req.user);
       if (!access.allowed) {
         return res.status(403).json({ message: access.message });
       }
@@ -92,8 +92,8 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Create user (protected - Admin/Company Admin)
-router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Create user (protected - Owner/Management)
+router.post('/', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { password, ...userData } = req.body;
 
@@ -101,8 +101,8 @@ router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, 
       return res.status(400).json({ message: 'Password is required' });
     }
 
-    if (req.user.role === 'Company Admin') {
-      if (!COMPANY_ADMIN_ALLOWED_ROLES.includes(userData.role)) {
+    if (req.user.role === 'Management') {
+      if (!MANAGEMENT_ALLOWED_ROLES.includes(userData.role)) {
         return res.status(403).json({ message: 'Access denied' });
       }
 
@@ -135,20 +135,20 @@ router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, 
 // Update user (protected)
 router.put('/:id', authenticate, async (req, res) => {
   try {
-    // Users can update their own profile, Admin/Company Admin can update any
-    if (req.user._id.toString() !== req.params.id && !['Admin', 'Company Admin'].includes(req.user.role)) {
+    // Users can update their own profile, Owner/Management can update any
+    if (req.user._id.toString() !== req.params.id && !['Owner', 'Management'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const { password, ...updateData } = req.body;
     
-    if (req.user.role === 'Company Admin' && req.user._id.toString() !== req.params.id) {
+    if (req.user.role === 'Management' && req.user._id.toString() !== req.params.id) {
       const targetUser = await User.findById(req.params.id);
       if (!targetUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const access = ensureCompanyAdminAccess(targetUser, req.user);
+      const access = ensureManagementAccess(targetUser, req.user);
       if (!access.allowed) {
         return res.status(403).json({ message: access.message });
       }
@@ -181,16 +181,16 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Delete user (protected - Admin/Company Admin)
-router.delete('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Delete user (protected - Owner/Management)
+router.delete('/:id', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
-    if (req.user.role === 'Company Admin') {
+    if (req.user.role === 'Management') {
       const targetUser = await User.findById(req.params.id);
       if (!targetUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const access = ensureCompanyAdminAccess(targetUser, req.user);
+      const access = ensureManagementAccess(targetUser, req.user);
       if (!access.allowed) {
         return res.status(403).json({ message: access.message });
       }

@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee', 'Investor'],
+      enum: ['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Driver', 'Investment Partner', 'Non-Core Staff', 'Customer'],
       required: true,
     },
     outlet: {

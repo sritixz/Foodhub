@@ -12,10 +12,10 @@ const seedUsers = async () => {
     await connectDB();
     console.log('Connected to MongoDB');
 
-    // Clear existing users (optional - comment out if you want to keep existing users)
-    // await User.deleteMany({});
-    // console.log('Cleared existing users');
-
+    // Clear existing users
+    await User.deleteMany({});
+    console.log('Cleared existing users');
+ 
     // Create a default outlet if none exists (for users that need outlet assignment)
     let defaultOutlet = await Outlet.findOne();
     if (!defaultOutlet) {
@@ -42,57 +42,75 @@ const seedUsers = async () => {
     // Define users to seed
     const users = [
       {
-        name: 'Super Admin',
+        name: 'Owner User',
         email: 'admin@foodhub.com',
         phone: '9999999999',
         password: 'admin123',
-        role: 'Admin',
+        role: 'Owner',
         outlet: null,
         status: 'Active',
       },
       {
-        name: 'Company Admin',
+        name: 'Management User',
         email: 'companyadmin@foodhub.com',
         phone: '8888888888',
         password: 'company123',
-        role: 'Company Admin',
+        role: 'Management',
         outlet: null,
         status: 'Active',
       },
       {
-        name: 'Restaurant Staff',
+        name: 'Central Kitchen Manager',
+        email: 'ckm@foodhub.com',
+        phone: '7777777778',
+        password: 'ckm123',
+        role: 'Central Kitchen Manager',
+        outlet: defaultOutlet._id,
+        status: 'Active',
+      },
+      {
+        name: 'Outlet Sales Rep 1',
         email: 'staff@foodhub.com',
         phone: '7777777777',
         password: 'staff123',
-        role: 'Staff',
+        role: 'Outlet Sales Representative',
         outlet: defaultOutlet._id,
         status: 'Active',
       },
       {
-        name: 'Delivery Staff',
-        email: 'delivery@foodhub.com',
-        phone: '6666666666',
-        password: 'delivery123',
-        role: 'Delivery Staff',
-        outlet: defaultOutlet._id,
-        status: 'Active',
-      },
-      {
-        name: 'Vendor Manager',
+        name: 'Outlet Sales Rep 2',
         email: 'vendor@foodhub.com',
         phone: '5555555555',
         password: 'vendor123',
-        role: 'Vendor',
+        role: 'Outlet Sales Representative',
         outlet: defaultOutlet._id,
         status: 'Active',
       },
       {
-        name: 'Employee User',
+        name: 'Driver User',
+        email: 'delivery@foodhub.com',
+        phone: '6666666666',
+        password: 'delivery123',
+        role: 'Driver',
+        outlet: defaultOutlet._id,
+        status: 'Active',
+      },
+      {
+        name: 'Customer User',
         email: 'employee@foodhub.com',
         phone: '4444444444',
         password: 'employee123',
-        role: 'Employee',
+        role: 'Customer',
         outlet: null,
+        status: 'Active',
+      },
+      {
+        name: 'Investor User',
+        email: 'investor@foodhub.com',
+        phone: '3333333333',
+        password: 'investor123',
+        role: 'Investment Partner',
+        outlet: defaultOutlet._id,
         status: 'Active',
       },
     ];
