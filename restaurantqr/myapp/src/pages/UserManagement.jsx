@@ -25,7 +25,7 @@ const UserManagement = () => {
     name: '',
     email: '',
     phone: '',
-    role: 'Employee',
+    role: 'Customer',
     organization: '',
     outlet: '',
     password: '',
@@ -91,9 +91,9 @@ const UserManagement = () => {
     setFilteredUsers(filtered);
   }, [selectedRole, selectedStatus, selectedOutlet, searchTerm, users]);
 
-  const baseRoles = ['Admin', 'Company Admin', 'Staff', 'Delivery Staff', 'Vendor', 'Employee', 'Investor'];
-  const allowedRoles = user?.role === 'Company Admin'
-    ? ['Staff', 'Delivery Staff', 'Employee']
+  const baseRoles = ['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Driver', 'Investment Partner', 'Non-Core Staff', 'Customer'];
+  const allowedRoles = user?.role === 'Management'
+    ? ['Outlet Sales Representative', 'Driver', 'Customer']
     : baseRoles;
   const roles = ['All Roles', ...allowedRoles];
   const statuses = ['All Status', 'Active', 'Inactive'];
@@ -105,7 +105,7 @@ const UserManagement = () => {
       name: '',
       email: '',
       phone: '',
-      role: allowedRoles.includes('Employee') ? 'Employee' : allowedRoles[0],
+      role: allowedRoles.includes('Customer') ? 'Customer' : allowedRoles[0],
       organization: user?.organization || '',
       outlet: '',
       password: '',
@@ -127,7 +127,7 @@ const UserManagement = () => {
       name: selectedUser.name || '',
       email: selectedUser.email || '',
       phone: selectedUser.phone || '',
-      role: selectedUser.role || 'Employee',
+      role: selectedUser.role || 'Customer',
       organization: selectedUser.organization || user?.organization || '',
       outlet: selectedUser.outlet?._id || selectedUser.outlet || '',
       password: '',
@@ -170,9 +170,9 @@ const UserManagement = () => {
         organization: formData.organization || undefined,
         outlet: formData.outlet || null,
         status: formData.status,
-        investmentAmount: formData.role === 'Investor' ? Number(formData.investmentAmount) || 0 : undefined,
-        assuredReturnRate: formData.role === 'Investor' ? Number(formData.assuredReturnRate) || 0 : undefined,
-        profitSharePercentage: formData.role === 'Investor' ? Number(formData.profitSharePercentage) || 0 : undefined,
+        investmentAmount: formData.role === 'Investment Partner' ? Number(formData.investmentAmount) || 0 : undefined,
+        assuredReturnRate: formData.role === 'Investment Partner' ? Number(formData.assuredReturnRate) || 0 : undefined,
+        profitSharePercentage: formData.role === 'Investment Partner' ? Number(formData.profitSharePercentage) || 0 : undefined,
       };
 
       if (formData.password) {
@@ -327,9 +327,9 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{user.name}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${user.role === 'Admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                            user.role === 'Company Admin' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                              user.role === 'Vendor' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                        <span className={`px-2 py-1 text-xs font-medium rounded ${user.role === 'Owner' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                            user.role === 'Management' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                              user.role === 'Outlet Sales Representative' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                                 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
                           }`}>
                           {user.role}
@@ -436,7 +436,7 @@ const UserManagement = () => {
                   value={formData.organization}
                   onChange={(e) => handleFormChange('organization', e.target.value)}
                   placeholder="Organization name"
-                  disabled={user?.role === 'Company Admin'}
+                  disabled={user?.role === 'Management'}
                 />
                 <Select
                   label="Outlet"
@@ -457,7 +457,7 @@ const UserManagement = () => {
                   placeholder={editingUser ? 'Leave empty to keep current password' : 'Enter password'}
                   type="password"
                 />
-                {formData.role === 'Investor' && (
+                {formData.role === 'Investment Partner' && (
                   <>
                     <Input
                       label="Investment Amount (₹)"
