@@ -21,10 +21,6 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Set up routes with the MakerChecker interceptor middleware integrated exactly as planned!
-// In inventory, PATCH /:id/quantity requires MakerChecker interception:
-app.use('/api/inventory', inventoryRoutes);
-
 // Also register the Maker-Checker management routes:
 app.use('/api/maker-checker', makerCheckerRoutes);
 
