@@ -15,7 +15,7 @@ const router = express.Router();
 /* ─────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────── */
-const isAdminOrCompanyAdmin = (role) => ['Admin', 'Company Admin'].includes(role);
+const isOwnerOrManagement = (role) => ['Owner', 'Management'].includes(role);
 
 // Get active policy for an organization / fallback global
 const getPolicy = async (organization) => {
@@ -40,7 +40,7 @@ const monthlySpend = async (userId) => {
 /* ─────────────────────────────────────────
    PAYMENT SUMMARY  (Admin / Company Admin)
 ───────────────────────────────────────── */
-router.get('/summary', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+router.get('/summary', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { period = 'month' } = req.query;
     const now = new Date();
@@ -85,14 +85,14 @@ router.get('/', authenticate, async (req, res) => {
     if (status) query.status = status;
     if (type)   query.type   = type;
 
-    // Employee sees only their own
-    if (req.user.role === 'Employee') {
+    // Customer sees only their own
+    if (req.user.role === 'Customer') {
       query.requestedBy = req.user._id;
-    } else if (req.user.role === 'Company Admin') {
-      const employees = await User.find({ organization: req.user.organization }).select('_id');
-      query.requestedBy = { $in: employees.map(e => e._id) };
+    } else if (req.user.role === 'Management') {
+      const customers = await User.find({ organization: req.user.organization }).select('_id');
+      query.requestedBy = { $in: customers.map(c => c._id) };
     }
-    // Admin sees all
+    // Owner sees all
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [payments, total] = await Promise.all([
@@ -114,8 +114,8 @@ router.post('/', authenticate, async (req, res) => {
     const { amount, description, category, type = 'employee_expense', receiptUrl, vendor } = req.body;
     if (!amount || amount <= 0) return res.status(400).json({ message: 'Valid amount is required' });
 
-    // Policy check for employees
-    if (req.user.role === 'Employee') {
+    // Policy check for customers
+    if (req.user.role === 'Customer') {
       const policy = await getPolicy(req.user.organization);
       if (policy) {
         if (policy.singleTxLimit && amount > policy.singleTxLimit)
@@ -148,8 +148,8 @@ router.post('/', authenticate, async (req, res) => {
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-// Approve / Reject (Admin / Company Admin)
-router.patch('/:id/status', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Approve / Reject (Owner / Management)
+router.patch('/:id/status', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { status, notes } = req.body;
     if (!['Approved', 'Rejected', 'Processing', 'Paid'].includes(status))
@@ -168,8 +168,8 @@ router.patch('/:id/status', authenticate, authorize('Admin', 'Company Admin'), a
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-// Delete (Admin only)
-router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
+// Delete (Owner only)
+router.delete('/:id', authenticate, authorize('Owner'), async (req, res) => {
   try {
     const p = await Payment.findByIdAndDelete(req.params.id);
     if (!p) return res.status(404).json({ message: 'Payment not found' });
@@ -178,28 +178,28 @@ router.delete('/:id', authenticate, authorize('Admin'), async (req, res) => {
 });
 
 /* ─────────────────────────────────────────
-   PAYMENT POLICIES  (Company Admin / Admin)
-───────────────────────────────────────── */
-router.get('/policies', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+   PAYMENT POLICIES  (Management / Owner)
+   ───────────────────────────────────────── */
+router.get('/policies', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
-    const query = req.user.role === 'Company Admin' ? { organization: req.user.organization } : {};
+    const query = req.user.role === 'Management' ? { organization: req.user.organization } : {};
     const policies = await PaymentPolicy.find(query).populate('createdBy', 'name').sort({ createdAt: -1 });
     res.json(policies);
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-router.post('/policies', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+router.post('/policies', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const policy = await PaymentPolicy.create({
       ...req.body,
-      organization: req.user.role === 'Company Admin' ? req.user.organization : (req.body.organization || null),
+      organization: req.user.role === 'Management' ? req.user.organization : (req.body.organization || null),
       createdBy: req.user._id,
     });
     res.status(201).json(policy);
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-router.put('/policies/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+router.put('/policies/:id', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const policy = await PaymentPolicy.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!policy) return res.status(404).json({ message: 'Policy not found' });
@@ -207,7 +207,7 @@ router.put('/policies/:id', authenticate, authorize('Admin', 'Company Admin'), a
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-router.delete('/policies/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+router.delete('/policies/:id', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     await PaymentPolicy.findByIdAndDelete(req.params.id);
     res.json({ message: 'Policy deleted' });
@@ -215,9 +215,9 @@ router.delete('/policies/:id', authenticate, authorize('Admin', 'Company Admin')
 });
 
 /* ─────────────────────────────────────────
-   VENDOR PAYOUTS  (Admin)
-───────────────────────────────────────── */
-router.get('/payouts', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+   VENDOR PAYOUTS  (Owner / Management)
+   ───────────────────────────────────────── */
+router.get('/payouts', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { status, limit = 50 } = req.query;
     const query = status ? { status } : {};
@@ -230,8 +230,8 @@ router.get('/payouts', authenticate, authorize('Admin', 'Company Admin'), async 
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Create payout (Admin)
-router.post('/payouts', authenticate, authorize('Admin'), async (req, res) => {
+// Create payout (Owner)
+router.post('/payouts', authenticate, authorize('Owner'), async (req, res) => {
   try {
     const { vendorId, periodStart, periodEnd, notes } = req.body;
     if (!vendorId || !periodStart || !periodEnd)
@@ -264,8 +264,8 @@ router.post('/payouts', authenticate, authorize('Admin'), async (req, res) => {
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-// Update payout status (Admin)
-router.patch('/payouts/:id/status', authenticate, authorize('Admin'), async (req, res) => {
+// Update payout status (Owner)
+router.patch('/payouts/:id/status', authenticate, authorize('Owner'), async (req, res) => {
   try {
     const { status } = req.body;
     const valid = ['Pending', 'Processing', 'Paid', 'Failed'];
@@ -288,7 +288,7 @@ router.get('/disputes', authenticate, async (req, res) => {
     const query = {};
     if (status) query.status = status;
     // Non-admin sees only their disputes
-    if (!isAdminOrCompanyAdmin(req.user.role)) query.raisedBy = req.user._id;
+    if (!isOwnerOrManagement(req.user.role)) query.raisedBy = req.user._id;
     const disputes = await Dispute.find(query)
       .populate('raisedBy', 'name role')
       .populate('assignedTo', 'name')
@@ -328,8 +328,8 @@ router.post('/disputes/:id/comment', authenticate, async (req, res) => {
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
-// Resolve / update dispute status (Admin / Company Admin)
-router.patch('/disputes/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Resolve / update dispute status (Owner / Management)
+router.patch('/disputes/:id', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { status, resolution, assignedTo } = req.body;
     const update = {};

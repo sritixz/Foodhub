@@ -143,8 +143,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create menu item (protected - Vendor/Admin/Company Admin)
-router.post('/', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), validateCategory, async (req, res) => {
+// Create menu item (protected - Outlet Sales Representative/Owner/Management)
+router.post('/', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), validateCategory, async (req, res) => {
   try {
     const menuItem = new MenuItem(req.body);
     const savedMenuItem = await menuItem.save();
@@ -155,7 +155,7 @@ router.post('/', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), va
 });
 
 // PATCH status toggle (Available / Paused) — quick toggle without full update
-router.patch('/:id/status', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
+router.patch('/:id/status', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), async (req, res) => {
   try {
     const { status } = req.body;
     if (!['Available', 'Paused', 'Draft'].includes(status)) {
@@ -175,10 +175,10 @@ router.patch('/:id/status', authenticate, authorize('Vendor', 'Admin', 'Company 
   }
 });
 
-// Update menu item (protected - Vendor/Admin/Company Admin)
-router.put('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), validateCategory, async (req, res) => {
+// Update menu item (protected - Outlet Sales Representative/Owner/Management)
+router.put('/:id', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), validateCategory, async (req, res) => {
   try {
-    if (req.user.role === 'Vendor') {
+    if (req.user.role === 'Outlet Sales Representative') {
       const existingItem = await MenuItem.findById(req.params.id);
       if (!existingItem) {
         return res.status(404).json({ message: 'Menu item not found' });
@@ -202,8 +202,8 @@ router.put('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), 
   }
 });
 
-// Delete menu item (protected - Vendor/Admin/Company Admin)
-router.delete('/:id', authenticate, authorize('Vendor', 'Admin', 'Company Admin'), async (req, res) => {
+// Delete menu item (protected - Outlet Sales Representative/Owner/Management)
+router.delete('/:id', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), async (req, res) => {
   try {
     const menuItem = await MenuItem.findByIdAndDelete(req.params.id);
     if (!menuItem) {

@@ -9,8 +9,8 @@ const router = express.Router();
 
 // @route   GET /api/ledger/daily
 // @desc    Get all outlet ledgers for a specific date
-// @access  Admin, Company Admin
-router.get('/daily', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// @access  Owner, Management
+router.get('/daily', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
     const { date } = req.query; // 'YYYY-MM-DD'
     if (!date) {
@@ -32,7 +32,7 @@ router.get('/daily', authenticate, authorize('Admin', 'Company Admin'), async (r
 
 // @route   GET /api/ledger/outlet
 // @desc    Get specific outlet ledger data
-// @access  Admin, Company Admin, Vendor, Staff
+// @access  Owner, Management, Outlet Sales Representative
 router.get('/outlet', authenticate, async (req, res) => {
   try {
     const { date, outletId } = req.query;
@@ -42,7 +42,7 @@ router.get('/outlet', authenticate, async (req, res) => {
     }
 
     // Basic access control
-    if (['Vendor', 'Staff'].includes(req.user.role) && req.user.outlet.toString() !== outletId) {
+    if (['Outlet Sales Representative'].includes(req.user.role) && req.user.outlet.toString() !== outletId) {
        return res.status(403).json({ message: 'Not authorized for this outlet' });
     }
 
@@ -63,7 +63,7 @@ router.get('/outlet', authenticate, async (req, res) => {
 
 // @route   GET /api/ledger/calculate-sales
 // @desc    Fetch digital sales from orders to pre-fill EOD form
-// @access  Vendor, Staff, Admin
+// @access  Outlet Sales Representative, Owner, Management
 router.get('/calculate-sales', authenticate, async (req, res) => {
   try {
     const { date, outletId } = req.query;
@@ -73,7 +73,7 @@ router.get('/calculate-sales', authenticate, async (req, res) => {
     }
 
     // Basic access control
-    if (['Vendor', 'Staff'].includes(req.user.role) && req.user.outlet.toString() !== outletId) {
+    if (['Outlet Sales Representative'].includes(req.user.role) && req.user.outlet.toString() !== outletId) {
        return res.status(403).json({ message: 'Not authorized for this outlet' });
     }
 
@@ -116,7 +116,7 @@ router.get('/calculate-sales', authenticate, async (req, res) => {
 
 // @route   POST /api/ledger/submit
 // @desc    Submit End-of-Day ledger
-// @access  Vendor, Staff, Admin
+// @access  Outlet Sales Representative, Owner, Management
 router.post('/submit', authenticate, async (req, res) => {
   try {
     const { date, outlet, items, collections, expenses, financials } = req.body;
@@ -126,7 +126,7 @@ router.post('/submit', authenticate, async (req, res) => {
     }
 
     // Basic access control
-    if (['Vendor', 'Staff'].includes(req.user.role) && req.user.outlet.toString() !== outlet) {
+    if (['Outlet Sales Representative'].includes(req.user.role) && req.user.outlet.toString() !== outlet) {
        return res.status(403).json({ message: 'Not authorized to submit for this outlet' });
     }
 
@@ -166,8 +166,8 @@ router.post('/submit', authenticate, async (req, res) => {
 
 // @route   POST /api/ledger/dispatch
 // @desc    Central Kitchen dispatches sentQty to an outlet ledger
-// @access  Admin, Company Admin
-router.post('/dispatch', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// @access  Owner, Management, Central Kitchen Manager
+router.post('/dispatch', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
     const { date, outlet, items } = req.body;
     if (!date || !outlet || !items) {

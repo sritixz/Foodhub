@@ -5,14 +5,14 @@ import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
-// Get all inventory items (protected - Admin/Company Admin/Vendor)
-router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+// Get all inventory items (protected - Owner/Management/Central Kitchen Manager/Outlet Sales Representative)
+router.get('/', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative'), async (req, res) => {
   try {
     const { branch, category, lowStock } = req.query;
     const query = {};
 
-    // Vendors can only see their own outlet's inventory
-    if (req.user.role === 'Vendor' && req.user.outlet) {
+    // Outlet Sales Representatives can only see their own outlet's inventory
+    if (req.user.role === 'Outlet Sales Representative' && req.user.outlet) {
       query.branch = req.user.outlet;
     } else {
       if (branch) query.branch = branch;
@@ -34,8 +34,8 @@ router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), asy
   }
 });
 
-// Get single inventory item (protected - Admin/Company Admin/Vendor)
-router.get('/:id', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+// Get single inventory item (protected - Owner/Management/Central Kitchen Manager/Outlet Sales Representative)
+router.get('/:id', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative'), async (req, res) => {
   try {
     const item = await Inventory.findById(req.params.id).populate('branch', 'name outletId');
     if (!item) {
@@ -47,8 +47,8 @@ router.get('/:id', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), 
   }
 });
 
-// Create inventory item (protected - Admin/Company Admin)
-router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Create inventory item (protected - Owner/Management/Central Kitchen Manager)
+router.post('/', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
     const inventory = new Inventory(req.body);
     const savedInventory = await inventory.save();
@@ -59,8 +59,8 @@ router.post('/', authenticate, authorize('Admin', 'Company Admin'), async (req, 
   }
 });
 
-// Update inventory item (protected - Admin/Company Admin)
-router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Update inventory item (protected - Owner/Management/Central Kitchen Manager)
+router.put('/:id', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
     const inventory = await Inventory.findByIdAndUpdate(
       req.params.id,
@@ -76,8 +76,8 @@ router.put('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req
   }
 });
 
-// Update inventory quantity (protected - Admin/Company Admin)
-router.patch('/:id/quantity', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Update inventory quantity (protected - Owner/Management/Central Kitchen Manager/Outlet Sales Representative)
+router.patch('/:id/quantity', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative'), async (req, res) => {
   try {
     const { quantity, operation } = req.body; // operation: 'add' or 'subtract'
     const item = await Inventory.findById(req.params.id);
@@ -104,8 +104,8 @@ router.patch('/:id/quantity', authenticate, authorize('Admin', 'Company Admin'),
   }
 });
 
-// Transfer stock between outlets (protected - Admin/Company Admin)
-router.post('/transfer', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Transfer stock between outlets (protected - Owner/Management/Central Kitchen Manager/Outlet Sales Representative)
+router.post('/transfer', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative'), async (req, res) => {
   try {
     const { itemId, fromBranch, toBranch, quantity } = req.body;
 
@@ -144,8 +144,8 @@ router.post('/transfer', authenticate, authorize('Admin', 'Company Admin'), asyn
   }
 });
 
-// Delete inventory item (protected - Admin/Company Admin)
-router.delete('/:id', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+// Delete inventory item (protected - Owner/Management/Central Kitchen Manager)
+router.delete('/:id', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
     const inventory = await Inventory.findByIdAndDelete(req.params.id);
     if (!inventory) {
