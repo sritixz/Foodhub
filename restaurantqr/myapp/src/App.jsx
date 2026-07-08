@@ -36,6 +36,7 @@ import DailyMenuSetup from './pages/admin/DailyMenuSetup';
 import InvestorDashboard from './pages/InvestorDashboard';
 import InvestorPayouts from './pages/InvestorPayouts';
 import AdminInvestorLedger from './pages/admin/AdminInvestorLedger';
+import MakerCheckerApprovals from './pages/admin/MakerCheckerApprovals';
 
 const App = () => {
   return (
@@ -63,7 +64,7 @@ const App = () => {
         <Route
           path="/outlets"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <OutletManagement />
             </ProtectedRoute>
           }
@@ -71,7 +72,7 @@ const App = () => {
         <Route
           path="/outlets/add"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <AddOutlet />
             </ProtectedRoute>
           }
@@ -79,7 +80,7 @@ const App = () => {
         <Route
           path="/outlets/edit/:id"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <EditOutlet />
             </ProtectedRoute>
           }
@@ -87,17 +88,17 @@ const App = () => {
         <Route
           path="/outlets/:id/qrcode"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <OutletQRCode />
             </ProtectedRoute>
           }
         />
 
-        {/* Inventory - Admin/Company Admin/Vendor */}
+        {/* Inventory */}
         <Route
           path="/inventory"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative']}>
               <InventoryManagement />
             </ProtectedRoute>
           }
@@ -107,7 +108,7 @@ const App = () => {
         <Route
           path="/menu/add"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <AddMenuItem />
             </ProtectedRoute>
           }
@@ -115,7 +116,7 @@ const App = () => {
         <Route
           path="/menu/browse"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Staff', 'Employee']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Customer']}>
               <MenuBrowse />
             </ProtectedRoute>
           }
@@ -123,17 +124,17 @@ const App = () => {
         <Route
           path="/menu/edit/:id"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <EditMenuItem />
             </ProtectedRoute>
           }
         />
 
-        {/* Order Management - Admin/Company Admin/Vendor/Staff */}
+        {/* Order Management */}
         <Route
           path="/orders"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Staff']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <OrderManagement />
             </ProtectedRoute>
           }
@@ -141,7 +142,7 @@ const App = () => {
         <Route
           path="/orders/place"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Employee', 'Staff']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative', 'Customer']}>
               <OrderPlacement />
             </ProtectedRoute>
           }
@@ -151,7 +152,7 @@ const App = () => {
         <Route
           path="/delivery"
           element={
-            <ProtectedRoute allowedRoles={['Delivery Staff', 'Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Driver', 'Owner', 'Management', 'Outlet Sales Representative']}>
               <DeliveryDashboard />
             </ProtectedRoute>
           }
@@ -159,17 +160,17 @@ const App = () => {
         <Route
           path="/location-delivery"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor', 'Delivery Staff']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative', 'Driver']}>
               <LocationDelivery />
             </ProtectedRoute>
           }
         />
 
-        {/* Warehouse - Admin/Company Admin/Vendor */}
+        {/* Warehouse */}
         <Route
           path="/warehouse"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative']}>
               <WarehouseManagement />
             </ProtectedRoute>
           }
@@ -185,11 +186,11 @@ const App = () => {
           }
         />
 
-        {/* Reports - Admin/Company Admin/Vendor */}
+        {/* Reports */}
         <Route
           path="/reports"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative', 'Investment Partner']}>
               <Reports />
             </ProtectedRoute>
           }
@@ -197,7 +198,7 @@ const App = () => {
         <Route
           path="/admin/dispatch"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager']}>
               <CentralKitchenDispatch />
             </ProtectedRoute>
           }
@@ -205,7 +206,7 @@ const App = () => {
         <Route
           path="/investor/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['Investor']}>
+            <ProtectedRoute allowedRoles={['Investment Partner']}>
               <InvestorDashboard />
             </ProtectedRoute>
           }
@@ -213,7 +214,7 @@ const App = () => {
         <Route
           path="/investor/payouts"
           element={
-            <ProtectedRoute allowedRoles={['Investor']}>
+            <ProtectedRoute allowedRoles={['Investment Partner']}>
               <InvestorPayouts />
             </ProtectedRoute>
           }
@@ -221,7 +222,7 @@ const App = () => {
         <Route
           path="/admin/investors"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <AdminInvestorLedger />
             </ProtectedRoute>
           }
@@ -229,7 +230,7 @@ const App = () => {
         <Route
           path="/admin/daily-ledger"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager']}>
               <DailyLedgerDashboard />
             </ProtectedRoute>
           }
@@ -237,7 +238,7 @@ const App = () => {
         <Route
           path="/admin/csv-analysis"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <CSVAnalysis />
             </ProtectedRoute>
           }
@@ -245,18 +246,28 @@ const App = () => {
         <Route
           path="/admin/daily-menu"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <DailyMenuSetup />
             </ProtectedRoute>
           }
         />
 
-        {/* User Management - Admin/Company Admin */}
+        {/* User Management */}
         <Route
           path="/users"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Maker-Checker Approvals */}
+        <Route
+          path="/admin/approvals"
+          element={
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager']}>
+              <MakerCheckerApprovals />
             </ProtectedRoute>
           }
         />
@@ -265,7 +276,7 @@ const App = () => {
         <Route
           path="/vendors"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <VendorDashboard />
             </ProtectedRoute>
           }
@@ -273,7 +284,7 @@ const App = () => {
         <Route
           path="/vendor/daily-log"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Vendor']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <VendorDailyLog />
             </ProtectedRoute>
           }
@@ -289,41 +300,41 @@ const App = () => {
           }
         />
 
-        {/* Category Management - Admin only */}
+        {/* Category Management */}
         <Route
           path="/categories"
           element={
-            <ProtectedRoute allowedRoles={['Admin']}>
+            <ProtectedRoute allowedRoles={['Owner']}>
               <CategoryManagement />
             </ProtectedRoute>
           }
         />
 
-        {/* Budget Configuration - Company Admin / Admin */}
+        {/* Budget Configuration */}
         <Route
           path="/budget-config"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <BudgetConfig />
             </ProtectedRoute>
           }
         />
 
-        {/* Payment Module - Employee / Company Admin / Admin */}
+        {/* Payment Module */}
         <Route
           path="/payments"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin', 'Employee']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Customer']}>
               <PaymentModule />
             </ProtectedRoute>
           }
         />
 
-        {/* Leads Management - Company Admin / Admin */}
+        {/* Leads Management */}
         <Route
           path="/admin/leads"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <Leads />
             </ProtectedRoute>
           }
@@ -331,7 +342,7 @@ const App = () => {
         <Route
           path="/admin/leads/:tab"
           element={
-            <ProtectedRoute allowedRoles={['Admin', 'Company Admin']}>
+            <ProtectedRoute allowedRoles={['Owner', 'Management']}>
               <Leads />
             </ProtectedRoute>
           }
