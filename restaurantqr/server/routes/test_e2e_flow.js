@@ -65,6 +65,8 @@ async function runE2E() {
       res.json({ message: 'Success' });
     });
 
+    app.use('/api/inventory', inventoryRoutes);
+
     // 1. Sales Rep adjusts inventory quantity (should be intercepted)
     console.log('\n--- Step 1: Outlet Sales Rep adjusts inventory quantity ---');
     let res = await request(app)
