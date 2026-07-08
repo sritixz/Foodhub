@@ -54,10 +54,11 @@ async function runE2E() {
     mockItem = await Inventory.create({
       name: 'E2E Test Flour',
       sku: `FLOUR-${Date.now()}`,
+      unit: 'Kg',
       quantity: 10,
       threshold: 5,
       branch: defaultOutlet._id,
-      category: 'Ingredients',
+      category: 'Grains',
     });
     console.log(`Mock item created: ${mockItem.name}, initial qty: ${mockItem.quantity}`);
 
