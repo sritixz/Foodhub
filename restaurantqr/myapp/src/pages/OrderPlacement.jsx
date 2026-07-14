@@ -51,6 +51,85 @@ const OrderPlacement = () => {
     scheduledTime: '',
   });
 
+  // Location suggestions and geocoding state
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [coordinates, setCoordinates] = useState({ lat: null, lon: null });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Debounced address suggestion fetcher
+  useEffect(() => {
+    if (!showSuggestions || !orderDetails.deliveryAddress || orderDetails.deliveryAddress.trim().length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSuggestionsLoading(true);
+      try {
+        const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+          params: {
+            format: 'json',
+            q: orderDetails.deliveryAddress,
+            limit: 5,
+            addressdetails: 1
+          }
+        });
+        setAddressSuggestions(response.data || []);
+      } catch (error) {
+        console.error('Error fetching address suggestions:', error);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [orderDetails.deliveryAddress, showSuggestions]);
+
+  const handleSelectSuggestion = (suggestion) => {
+    setOrderDetails(prev => ({ ...prev, deliveryAddress: suggestion.display_name }));
+    setCoordinates({ lat: suggestion.lat, lon: suggestion.lon });
+    setShowSuggestions(false);
+    setAddressSuggestions([]);
+  };
+
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setSuggestionsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCoordinates({ lat: latitude, lon: longitude });
+        try {
+          const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+            params: {
+              format: 'json',
+              lat: latitude,
+              lon: longitude,
+              addressdetails: 1
+            }
+          });
+          if (response.data && response.data.display_name) {
+            setOrderDetails(prev => ({ ...prev, deliveryAddress: response.data.display_name }));
+          }
+        } catch (error) {
+          console.error('Error reverse geocoding coordinates:', error);
+        } finally {
+          setSuggestionsLoading(false);
+          setShowSuggestions(false);
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        alert("Failed to retrieve your location. Please check your browser location permissions.");
+        setSuggestionsLoading(false);
+      }
+    );
+  };
+
   useEffect(() => {
     fetchMenuItems();
   }, [outletId]);
@@ -461,23 +540,88 @@ const OrderPlacement = () => {
                     }}
                     options={['Delivery', 'Pickup', 'Dine-in']}
                   />
-                  <div>
-                    <Input
-                      label="Delivery Address"
-                      placeholder="Enter delivery address"
-                      value={orderDetails.deliveryAddress}
-                      onChange={(e) => {
-                        setOrderDetails({ ...orderDetails, deliveryAddress: e.target.value });
-                        if (e.target.value.trim()) {
-                          setErrors(prev => ({ ...prev, deliveryAddress: '' }));
-                        }
-                      }}
-                      disabled={orderDetails.deliveryMode !== 'Delivery'}
-                    />
-                    {errors.deliveryAddress && (
-                      <p className="text-red-500 text-xs mt-1">{errors.deliveryAddress}</p>
-                    )}
-                  </div>
+                  {orderDetails.deliveryMode === 'Delivery' && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center justify-between">
+                          <span>Delivery Address *</span>
+                          <button
+                            type="button"
+                            onClick={handleLocateMe}
+                            className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline bg-transparent border-0 cursor-pointer"
+                          >
+                            <span className="material-icons-outlined text-sm">my_location</span>
+                            Locate Me
+                          </button>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search area, street, or landmark..."
+                            value={orderDetails.deliveryAddress}
+                            onChange={(e) => {
+                              setOrderDetails(prev => ({ ...prev, deliveryAddress: e.target.value }));
+                              setShowSuggestions(true);
+                              if (e.target.value.trim()) {
+                                setErrors(prev => ({ ...prev, deliveryAddress: '' }));
+                              }
+                            }}
+                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-200"
+                          />
+                          {suggestionsLoading && (
+                            <span className="absolute right-3 top-3 inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                          )}
+                        </div>
+
+                        {/* Suggestions Dropdown */}
+                        {showSuggestions && addressSuggestions.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                            {addressSuggestions.map((suggestion, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(suggestion)}
+                                className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800/50 last:border-b-0 flex gap-2.5 items-start transition-colors"
+                              >
+                                <span className="material-icons-outlined text-slate-400 mt-0.5 text-base">location_on</span>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                    {suggestion.address?.road || suggestion.address?.suburb || suggestion.address?.city || 'Selected Location'}
+                                  </p>
+                                  <p className="text-xs text-slate-400 truncate max-w-[340px]">
+                                    {suggestion.display_name}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {errors.deliveryAddress && (
+                          <p className="text-red-500 text-xs mt-1.5">{errors.deliveryAddress}</p>
+                        )}
+                      </div>
+
+                      {/* Map Preview */}
+                      {orderDetails.deliveryAddress && (
+                        <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-1.5">
+                          <iframe
+                            width="100%"
+                            height="180"
+                            frameBorder="0"
+                            scrolling="no"
+                            marginHeight="0"
+                            marginWidth="0"
+                            src={
+                              coordinates.lat && coordinates.lon
+                                ? `https://maps.google.com/maps?q=${coordinates.lat},${coordinates.lon}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+                                : `https://maps.google.com/maps?q=${encodeURIComponent(orderDetails.deliveryAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`
+                            }
+                            className="rounded-xl"
+                          ></iframe>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <Input
                       label="Schedule Delivery (optional)"
