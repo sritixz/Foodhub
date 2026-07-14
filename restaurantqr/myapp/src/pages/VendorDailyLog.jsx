@@ -427,7 +427,7 @@ const VendorDailyLog = () => {
             max={new Date().toISOString().split('T')[0]}
             required
           />
-          {['Admin', 'Company Admin'].includes(user?.role) && (
+          {['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role) && (
             <div className="w-64">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Outlet</label>
               <select
@@ -439,6 +439,14 @@ const VendorDailyLog = () => {
                   <option key={o._id} value={o._id}>{o.name}</option>
                 ))}
               </select>
+            </div>
+          )}
+          {!['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role) && outlets.length > 0 && (
+            <div className="w-64">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Outlet</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 font-medium">
+                {outlets[0]?.name}
+              </div>
             </div>
           )}
           <Button onClick={fetchData} loading={loading}>Refresh Data</Button>
