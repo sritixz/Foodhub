@@ -28,7 +28,7 @@ const VendorDashboard = () => {
     operatingHours: { open: '09:00', close: '22:00' },
   });
 
-  const isAdmin = ['Admin', 'Company Admin'].includes(user?.role);
+  const isAdmin = ['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role);
 
   useEffect(() => {
     fetchVendors();

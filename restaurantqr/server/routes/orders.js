@@ -60,20 +60,20 @@ const createNotifications = async ({ users, title, message, type, relatedId, rel
   });
 };
 
-// Get active delivery staff (for assignment dropdown - Vendor/Admin/Company Admin)
+// Get active delivery staff (for assignment dropdown - Vendor/Admin/Company Admin and new counterparts)
 router.get('/delivery-staff/list', authenticate, async (req, res) => {
   try {
-    const allowedRoles = ['Vendor', 'Admin', 'Company Admin'];
+    const allowedRoles = ['Vendor', 'Admin', 'Company Admin', 'Outlet Sales Representative', 'Owner', 'Management'];
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const query = { role: 'Delivery Staff', status: 'Active' };
+    const query = { role: { $in: ['Delivery Staff', 'Driver'] }, status: 'Active' };
 
     // Filter by outlet if provided, or by vendor's own outlet
     if (req.query.outlet) {
       query.outlet = req.query.outlet;
-    } else if (req.user.role === 'Vendor' && req.user.outlet) {
+    } else if (['Vendor', 'Outlet Sales Representative'].includes(req.user.role) && req.user.outlet) {
       query.outlet = req.user.outlet;
     }
 
@@ -189,8 +189,8 @@ router.post('/', async (req, res) => {
     // Broadcast order update via SSE
     broadcastOrderUpdate(populatedOrder);
 
-    const vendorUsers = await User.find({ role: 'Vendor', outlet: populatedOrder.vendor?._id });
-    const adminUsers = await User.find({ role: { $in: ['Admin', 'Company Admin'] } });
+    const vendorUsers = await User.find({ role: { $in: ['Vendor', 'Outlet Sales Representative'] }, outlet: populatedOrder.vendor?._id });
+    const adminUsers = await User.find({ role: { $in: ['Admin', 'Company Admin', 'Owner', 'Management'] } });
     await createNotifications({
       users: [...vendorUsers, ...adminUsers],
       title: 'New Order Received',
@@ -219,9 +219,13 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     const role = req.user.role;
     const allowedStatusesByRole = {
       Vendor: ['Preparing', 'Ready', 'Cancelled'],
+      'Outlet Sales Representative': ['Preparing', 'Ready', 'Cancelled'],
       'Delivery Staff': ['Picked', 'In Transit', 'Delivered'],
+      Driver: ['Picked', 'In Transit', 'Delivered'],
       Admin: ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
+      Owner: ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
       'Company Admin': ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
+      Management: ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
     };
 
     if (!allowedStatusesByRole[role]?.includes(status)) {
@@ -230,7 +234,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
 
     // Enforce delivery staff assignment — only assigned staff can update delivery statuses
     const deliveryStatuses = ['Picked', 'In Transit', 'Delivered'];
-    if (role === 'Delivery Staff' && deliveryStatuses.includes(status)) {
+    if (['Delivery Staff', 'Driver'].includes(role) && deliveryStatuses.includes(status)) {
       const existingOrder = await Order.findById(req.params.id);
       if (existingOrder && existingOrder.assignedTo && existingOrder.assignedTo.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'This order is assigned to another delivery staff' });
@@ -313,13 +317,13 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 });
 
-// Assign delivery staff to order (Vendor/Admin/Company Admin only)
+// Assign delivery staff to order (Vendor/Admin/Company Admin and new counterparts only)
 router.patch('/:id/assign', authenticate, async (req, res) => {
   try {
     // Authorization check
-    const allowedRoles = ['Vendor', 'Admin', 'Company Admin'];
+    const allowedRoles = ['Vendor', 'Admin', 'Company Admin', 'Outlet Sales Representative', 'Owner', 'Management'];
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Only Vendor/Admin/Company Admin can assign delivery staff' });
+      return res.status(403).json({ message: 'Only Vendor/Admin/Company Admin (or their new equivalents) can assign delivery staff' });
     }
 
     const { assignedTo } = req.body;
@@ -327,9 +331,9 @@ router.patch('/:id/assign', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'assignedTo is required' });
     }
 
-    // Validate assignedTo is an active Delivery Staff user
+    // Validate assignedTo is an active Delivery Staff/Driver user
     const deliveryUser = await User.findById(assignedTo);
-    if (!deliveryUser || deliveryUser.role !== 'Delivery Staff') {
+    if (!deliveryUser || !['Delivery Staff', 'Driver'].includes(deliveryUser.role)) {
       return res.status(400).json({ message: 'Invalid delivery staff user' });
     }
     if (deliveryUser.status !== 'Active') {

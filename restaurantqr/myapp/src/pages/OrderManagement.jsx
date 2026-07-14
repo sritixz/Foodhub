@@ -73,9 +73,9 @@ const OrderManagement = () => {
       const params = {};
 
       // Role-based filtering
-      if (user?.role === 'Vendor' && user?.outlet) {
+      if (['Vendor', 'Outlet Sales Representative'].includes(user?.role) && user?.outlet) {
         params.vendor = user.outlet._id || user.outlet;
-      } else if (user?.role === 'Delivery Staff' && user?.outlet) {
+      } else if (['Delivery Staff', 'Driver'].includes(user?.role) && user?.outlet) {
         params.vendor = user.outlet._id || user.outlet;
       } else if (selectedOutlet !== 'All Outlets') {
         params.vendor = selectedOutlet;
@@ -246,9 +246,9 @@ const OrderManagement = () => {
   };
 
   const deliveryOrders = orders.filter(order => order.deliveryAddress).slice(0, 3);
-  const isVendor = user?.role === 'Vendor';
-  const isDeliveryStaff = user?.role === 'Delivery Staff';
-  const isAdmin = ['Admin', 'Company Admin'].includes(user?.role);
+  const isVendor = ['Vendor', 'Outlet Sales Representative'].includes(user?.role);
+  const isDeliveryStaff = ['Delivery Staff', 'Driver'].includes(user?.role);
+  const isAdmin = ['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role);
 
   if (loading) {
     return (

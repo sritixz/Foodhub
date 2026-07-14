@@ -17,7 +17,7 @@ const Reports = () => {
   const [period, setPeriod] = useState('month');
   const [exporting, setExporting] = useState(false);
 
-  const isAdmin = ['Admin', 'Company Admin'].includes(user?.role);
+  const isAdmin = ['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role);
 
   useEffect(() => {
     fetchAllReports();

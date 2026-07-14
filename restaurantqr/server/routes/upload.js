@@ -11,8 +11,8 @@ const router = express.Router();
 // Upload menu item image (protected - Vendor/Admin)
 router.post('/menu-items', authenticate, uploadSingleToS3('image', 'menu-items'), async (req, res) => {
   try {
-    // Check if user has permission (Vendor, Admin, or Company Admin)
-    if (!['Vendor', 'Admin', 'Company Admin'].includes(req.user.role)) {
+    // Check if user has permission (Vendor, Admin, or Company Admin / new counterparts)
+    if (!['Vendor', 'Admin', 'Company Admin', 'Outlet Sales Representative', 'Owner', 'Management'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -34,7 +34,7 @@ router.post('/menu-items', authenticate, uploadSingleToS3('image', 'menu-items')
 router.post('/outlet-logo', authenticate, uploadSingleToS3('logo', 'outlet-logos'), async (req, res) => {
   try {
     // Check if user has permission
-    if (!['Admin', 'Company Admin'].includes(req.user.role)) {
+    if (!['Admin', 'Company Admin', 'Owner', 'Management'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -55,7 +55,7 @@ router.post('/outlet-logo', authenticate, uploadSingleToS3('logo', 'outlet-logos
 // Upload outlet documents (protected - Admin/Company Admin)
 router.post('/outlet-documents', authenticate, uploadDocSingleToS3('document', 'outlet-documents'), async (req, res) => {
   try {
-    if (!['Admin', 'Company Admin'].includes(req.user.role)) {
+    if (!['Admin', 'Company Admin', 'Owner', 'Management'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied' });
     }
     if (!req.file) {

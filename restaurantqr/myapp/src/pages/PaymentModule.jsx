@@ -926,9 +926,9 @@ const PaymentModule = () => {
   const role = user?.role;
 
   // Determine which tabs this role can see
-  const isAdmin        = role === 'Admin';
-  const isCompanyAdmin = role === 'Company Admin';
-  const isEmployee     = role === 'Employee';
+  const isAdmin        = ['Admin', 'Owner'].includes(role);
+  const isCompanyAdmin = ['Company Admin', 'Management'].includes(role);
+  const isEmployee     = ['Employee', 'Customer'].includes(role);
 
   // Default active tab per role
   const defaultTab = isAdmin ? 'admin' : isCompanyAdmin ? 'company' : 'employee';

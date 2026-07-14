@@ -28,8 +28,8 @@ const timeAgo = (d) => {
 
 const WarehouseManagement = () => {
   const { user } = useAuth();
-  const isAdmin = ['Admin','Company Admin'].includes(user?.role);
-  const isVendor = user?.role === 'Vendor';
+  const isAdmin = ['Admin','Company Admin','Owner','Management'].includes(user?.role);
+  const isVendor = ['Vendor','Outlet Sales Representative'].includes(user?.role);
 
   const [warehouses, setWarehouses] = useState([]);
   const [outlets, setOutlets] = useState([]);

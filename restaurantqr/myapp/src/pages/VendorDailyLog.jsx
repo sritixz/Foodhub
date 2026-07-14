@@ -25,7 +25,7 @@ const VendorDailyLog = () => {
 
   useEffect(() => {
     // If admin, fetch outlets to select from. Else just use their outlet.
-    if (['Admin', 'Company Admin'].includes(user?.role)) {
+    if (['Admin', 'Company Admin', 'Owner', 'Management'].includes(user?.role)) {
       api.get('/outlets').then(res => {
         setOutlets(res.data);
         if (res.data.length > 0 && !selectedOutlet) {

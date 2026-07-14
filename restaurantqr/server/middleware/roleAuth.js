@@ -1,15 +1,39 @@
 import authenticate from './auth.js';
 
+const roleMap = {
+  'Admin': 'Owner',
+  'Company Admin': 'Management',
+  'Vendor': 'Outlet Sales Representative',
+  'Staff': 'Outlet Sales Representative',
+  'Delivery Staff': 'Driver',
+  'Investor': 'Investment Partner',
+  'Employee': 'Customer'
+};
+
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Expand allowed roles to include legacy/new mapping equivalents
+    const expandedRoles = [...roles];
+    roles.forEach(role => {
+      // If a legacy role is specified, allow the corresponding new role
+      if (roleMap[role] && !expandedRoles.includes(roleMap[role])) {
+        expandedRoles.push(roleMap[role]);
+      }
+      // If a new role is specified, allow the corresponding legacy role (reverse map)
+      const legacyKey = Object.keys(roleMap).find(key => roleMap[key] === role);
+      if (legacyKey && !expandedRoles.includes(legacyKey)) {
+        expandedRoles.push(legacyKey);
+      }
+    });
+
+    if (!expandedRoles.includes(req.user.role)) {
       return res.status(403).json({ 
         message: 'Access denied. Insufficient permissions.',
-        requiredRoles: roles,
+        requiredRoles: expandedRoles,
         userRole: req.user.role
       });
     }

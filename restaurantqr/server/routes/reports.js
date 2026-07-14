@@ -11,8 +11,8 @@ const router = express.Router();
 const getMatchByRole = (user, dateFilter) => {
   const match = {};
 
-  // Vendor and Investor see only their own outlet's orders
-  if (['Vendor', 'Investor'].includes(user.role) && user.outlet) {
+  // Vendor and Investor (and new roles) see only their own outlet's orders
+  if (['Vendor', 'Investor', 'Outlet Sales Representative', 'Investment Partner'].includes(user.role) && user.outlet) {
     match.vendor = new mongoose.Types.ObjectId(user.outlet.toString());
   }
   // Company Admin and Admin see all orders across all outlets

@@ -9,19 +9,19 @@ import authorize from '../middleware/roleAuth.js';
 const router = express.Router();
 
 const isVendorAllowed = (req, outletId) => {
-  if (['Admin', 'Company Admin'].includes(req.user.role)) {
+  if (['Admin', 'Company Admin', 'Owner', 'Management'].includes(req.user.role)) {
     return true;
   }
-  if (req.user.role === 'Vendor' && req.user.outlet?.toString() === outletId.toString()) {
+  if (['Vendor', 'Outlet Sales Representative'].includes(req.user.role) && req.user.outlet?.toString() === outletId.toString()) {
     return true;
   }
   return false;
 };
 
-// Get vendor list (Admin/Company Admin) or own outlet (Vendor)
-router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor'), async (req, res) => {
+// Get vendor list (Admin/Company Admin/Owner/Management) or own outlet (Vendor/Outlet Sales Representative)
+router.get('/', authenticate, authorize('Admin', 'Company Admin', 'Vendor', 'Owner', 'Management', 'Outlet Sales Representative'), async (req, res) => {
   try {
-    if (req.user.role === 'Vendor') {
+    if (['Vendor', 'Outlet Sales Representative'].includes(req.user.role)) {
       const vendorOutlet = await Outlet.findById(req.user.outlet);
       return res.json(vendorOutlet ? [vendorOutlet] : []);
     }

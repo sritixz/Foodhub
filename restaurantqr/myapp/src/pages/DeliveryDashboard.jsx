@@ -6,7 +6,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 // Roles that are allowed to see customer contact details
-const CONTACT_ALLOWED_ROLES = ['Admin', 'Company Admin', 'Vendor', 'Delivery Staff'];
+const CONTACT_ALLOWED_ROLES = ['Admin', 'Company Admin', 'Vendor', 'Delivery Staff', 'Owner', 'Management', 'Outlet Sales Representative', 'Driver'];
 
 const STATUS_BADGE = {
   New:         'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -201,7 +201,7 @@ const OrderRow = ({ order, userRole, onStatusUpdate }) => {
       {/* Actions */}
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-2">
-          {['Delivery Staff', 'Admin', 'Company Admin', 'Vendor'].includes(userRole) && (
+          {['Delivery Staff', 'Admin', 'Company Admin', 'Vendor', 'Driver', 'Owner', 'Management', 'Outlet Sales Representative'].includes(userRole) && (
             <>
               {order.status === 'Ready' && (
                 <Button size="sm" onClick={() => onStatusUpdate(order._id, 'Picked')}>
@@ -247,7 +247,7 @@ const DeliveryDashboard = () => {
     try {
       setLoading(true);
       const params = {};
-      if (user?.role === 'Vendor' && user?.outlet) {
+      if (['Vendor', 'Outlet Sales Representative'].includes(user?.role) && user?.outlet) {
         params.vendor = user.outlet._id || user.outlet;
       }
       const response = await api.get('/orders', { params });
@@ -256,7 +256,7 @@ const DeliveryDashboard = () => {
       );
 
       // Delivery Staff only sees orders assigned to them
-      if (user?.role === 'Delivery Staff') {
+      if (['Delivery Staff', 'Driver'].includes(user?.role)) {
         deliveryOrders = deliveryOrders.filter((order) => {
           const assignedId = order.assignedTo?._id || order.assignedTo;
           return assignedId === user._id;
