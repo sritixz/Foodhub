@@ -65,7 +65,7 @@ router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin
       return res.status(404).json({ message: 'Investor not found' });
     }
 
-    if (investor.role !== 'Investor') {
+    if (!['Investor', 'Investment Partner'].includes(investor.role)) {
       return res.status(400).json({ message: 'User is not registered as an Investor' });
     }
 
@@ -117,7 +117,7 @@ router.get('/stats', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Investor not found' });
     }
 
-    if (investor.role !== 'Investor') {
+    if (!['Investor', 'Investment Partner'].includes(investor.role)) {
       return res.status(400).json({ message: 'User is not an Investor' });
     }
 
@@ -180,7 +180,7 @@ router.get('/payouts', authenticate, async (req, res) => {
   try {
     let query = {};
 
-    if (req.user.role === 'Investor') {
+    if (['Investor', 'Investment Partner'].includes(req.user.role)) {
       query.investor = req.user.id;
     } else if (['Admin', 'Company Admin'].includes(req.user.role)) {
       if (req.query.investorId) {
@@ -221,7 +221,7 @@ router.post('/payouts', authenticate, authorize('Admin', 'Company Admin'), async
     }
 
     const investor = await User.findById(investorId);
-    if (!investor || investor.role !== 'Investor') {
+    if (!investor || !['Investor', 'Investment Partner'].includes(investor.role)) {
       return res.status(404).json({ message: 'Investor not found or invalid role' });
     }
 

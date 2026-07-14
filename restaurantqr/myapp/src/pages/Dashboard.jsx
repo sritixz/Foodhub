@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const { user } = useAuth();
-    if (user?.role === 'Investor') {
+    if (['Investor', 'Investment Partner'].includes(user?.role)) {
         return <Navigate to="/investor/dashboard" replace />;
     }
     const [outlets, setOutlets] = useState([]);
