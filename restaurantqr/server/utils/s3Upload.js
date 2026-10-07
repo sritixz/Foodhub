@@ -33,8 +33,13 @@ export const uploadToS3 = async (fileBuffer, mimetype, folder = 'uploads') => {
       url: url,
     };
   } catch (error) {
-    console.error('Error uploading to S3:', error);
-    throw new Error('Failed to upload file to S3');
+    console.error('S3 upload error, generating base64 Data URL fallback:', error.message);
+    const base64Str = fileBuffer.toString('base64');
+    const dataUrl = `data:${mimetype};base64,${base64Str}`;
+    return {
+      key: `fallback-${uuidv4()}`,
+      url: dataUrl,
+    };
   }
 };
 

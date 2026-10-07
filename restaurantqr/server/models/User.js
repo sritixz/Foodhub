@@ -23,6 +23,39 @@ const userSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    companyCategory: {
+      type: String,
+      enum: ['Corporate Client', 'Commercial/Office Complex'],
+      default: 'Corporate Client',
+    },
+    assignedCompany: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    walletBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    walletTransactions: [
+      {
+        amount: { type: Number, required: true },
+        type: { type: String, enum: ['CREDIT', 'DEBIT'], required: true },
+        description: { type: String, required: true },
+        date: { type: Date, default: Date.now },
+      },
+    ],
+    offers: [
+      {
+        code: { type: String, required: true },
+        title: { type: String, required: true },
+        discountPercent: { type: Number, default: 0 },
+        discountAmount: { type: Number, default: 0 },
+        isUsed: { type: Boolean, default: false },
+        validUntil: { type: Date },
+      },
+    ],
     role: {
       type: String,
       enum: ['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Driver', 'Investment Partner', 'Non-Core Staff', 'Customer'],

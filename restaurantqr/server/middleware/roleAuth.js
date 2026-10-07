@@ -7,7 +7,6 @@ const roleMap = {
   'Staff': 'Outlet Sales Representative',
   'Delivery Staff': 'Driver',
   'Investor': 'Investment Partner',
-  'Employee': 'Customer'
 };
 
 export const authorize = (...roles) => {

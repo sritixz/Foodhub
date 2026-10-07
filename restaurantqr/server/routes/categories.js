@@ -13,8 +13,8 @@ const sanitizeInput = (input) => {
   return validator.escape(input.trim());
 };
 
-// GET /api/categories - List all categories (any authenticated user)
-router.get('/', authenticate, async (req, res) => {
+// GET /api/categories - List all categories (public or authenticated)
+router.get('/', async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
     

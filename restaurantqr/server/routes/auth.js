@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
@@ -59,19 +60,49 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Register (optional - can be restricted to admin only)
+// Register (customer facing and admin)
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone, password, role, outlet } = req.body;
+    let { name, email, phone, password, role, outlet, companyName, companyCategory, assignedCompany, campus, floor, desk } = req.body;
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+    role = role || 'Customer';
+    phone = (phone && String(phone).trim().length > 0) ? String(phone).trim() : '+91 98765 43210';
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields (name, email, password)' });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: String(email).toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    // Resolve outlet if string outletId or company name passed
+    let outletId = null;
+    let matchedCompanyCategory = companyCategory || 'Corporate Client';
+    let matchedAssignedCompany = assignedCompany || companyName || null;
+
+    if (outlet || assignedCompany) {
+      const searchStr = String(outlet || assignedCompany).trim();
+      const Outlet = (await import('../models/Outlet.js')).default;
+      const matchedOutlet = await Outlet.findOne({
+        $or: [
+          { _id: mongoose.Types.ObjectId.isValid(searchStr) && searchStr.length === 24 ? searchStr : null },
+          { outletId: searchStr.toUpperCase() },
+          { outletId: searchStr },
+          { name: { $regex: new RegExp(searchStr, 'i') } },
+        ],
+      });
+      if (matchedOutlet) {
+        outletId = matchedOutlet._id;
+        matchedCompanyCategory = matchedOutlet.category || matchedCompanyCategory;
+        matchedAssignedCompany = matchedOutlet.name;
+      }
     }
 
     // Hash password
@@ -80,12 +111,16 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const user = new User({
-      name,
-      email,
+      name: String(name).trim(),
+      email: String(email).toLowerCase().trim(),
       phone,
       password: hashedPassword,
       role,
-      outlet: outlet || null,
+      organization: matchedAssignedCompany || companyName || (outlet ? String(outlet).toUpperCase() : 'MOPY Customer'),
+      companyCategory: matchedCompanyCategory,
+      assignedCompany: matchedAssignedCompany,
+      outlet: outletId,
+      defaultDeliveryLocation: [floor, desk].filter(Boolean).join(' • ') || null,
       status: 'Active',
     });
 
@@ -100,12 +135,20 @@ router.post('/register', async (req, res) => {
       .select('-password');
 
     res.status(201).json({
+      success: true,
       token,
       user: userResponse,
       expiresIn: process.env.JWT_EXPIRE || '7d',
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during registration', error: error.message });
+    console.error('Registration error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+    res.status(400).json({ message: error.message || 'Registration failed' });
   }
 });
 

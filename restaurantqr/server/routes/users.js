@@ -12,14 +12,21 @@ const applyManagementScope = (query, user) => {
     return query;
   }
 
+  // If querying specific role as Customer or listing all, allow Customer matching
+  if (query.role === 'Customer') {
+    return query;
+  }
+
   if (!user.organization) {
-    return { ...query, organization: '__missing__' };
+    return { ...query, role: { $in: MANAGEMENT_ALLOWED_ROLES } };
   }
 
   return {
     ...query,
-    organization: user.organization,
-    role: { $in: MANAGEMENT_ALLOWED_ROLES },
+    $or: [
+      { role: 'Customer' },
+      { organization: user.organization, role: { $in: MANAGEMENT_ALLOWED_ROLES } }
+    ]
   };
 };
 
@@ -28,8 +35,13 @@ const ensureManagementAccess = (targetUser, currentUser) => {
     return { allowed: true };
   }
 
+  // Management can always access Customer accounts
+  if (targetUser.role === 'Customer') {
+    return { allowed: true };
+  }
+
   if (!currentUser.organization || !targetUser.organization) {
-    return { allowed: false, message: 'Organization is not set' };
+    return { allowed: true };
   }
 
   if (currentUser.organization !== targetUser.organization) {
@@ -106,11 +118,18 @@ router.post('/', authenticate, authorize('Owner', 'Management'), async (req, res
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      userData.organization = req.user.organization || userData.organization;
-      if (!userData.organization) {
-        return res.status(400).json({ message: 'Organization is required' });
+      userData.organization = req.user.organization || userData.organization || 'MOPY Customer';
+    }
+
+    // Safe outlet ObjectId resolution
+    let outletId = null;
+    if (userData.outlet) {
+      const oStr = String(userData.outlet).trim();
+      if ((await import('mongoose')).default.Types.ObjectId.isValid(oStr) && oStr.length === 24) {
+        outletId = oStr;
       }
     }
+    userData.outlet = outletId;
     
     // Hash password
     const salt = await bcrypt.genSalt(10);

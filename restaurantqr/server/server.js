@@ -25,11 +25,15 @@ import ledgerRoutes from './routes/ledger.js';
 import dailyMenuRoutes from './routes/dailyMenu.js';
 import investorRoutes from './routes/investors.js';
 import makerCheckerRoutes from './routes/makerCheckerRoutes.js';
+import { seedOfficialOutlets } from './scripts/seedOutlets.js';
+
 // Load environment variables
 dotenv.config();
 
-// Connect to database
-connectDB();
+// Connect to database and seed official outlets
+connectDB().then(() => {
+  seedOfficialOutlets();
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -61,6 +65,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/wallet', paymentRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/daily-menu', dailyMenuRoutes);

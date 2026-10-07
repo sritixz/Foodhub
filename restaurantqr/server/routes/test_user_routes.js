@@ -25,7 +25,7 @@ async function runTests() {
     // Find seeded Owner, Management, and Customer
     const ownerUser = await User.findOne({ email: 'admin@foodhub.com' });
     const managementUser = await User.findOne({ email: 'companyadmin@foodhub.com' });
-    const customerUser = await User.findOne({ email: 'employee@foodhub.com' });
+    const customerUser = await User.findOne({ email: 'customer@foodhub.com' });
 
     if (!ownerUser || !managementUser || !customerUser) {
       throw new Error('Seed users not found. Make sure to run node scripts/seedUsers.js first.');

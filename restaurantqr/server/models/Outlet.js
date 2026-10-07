@@ -23,6 +23,31 @@ const outletSchema = new mongoose.Schema(
       enum: ['Dine-In', 'Delivery-Only', 'Restaurant', 'Cafe', 'Bakery'],
       required: true,
     },
+    category: {
+      type: String,
+      enum: ['Corporate Client', 'Commercial/Office Complex'],
+      default: 'Corporate Client',
+    },
+    isPrivate: {
+      type: Boolean,
+      default: true,
+    },
+    customPrices: [
+      {
+        menuItem: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'MenuItem',
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        isAvailable: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
     contact: {
       name: {
         type: String,

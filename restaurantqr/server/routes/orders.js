@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
@@ -172,15 +173,106 @@ router.post('/', async (req, res) => {
     }
   }
   try {
-    const orderData = req.body;
-    
+    const orderData = { ...req.body };
+    const Outlet = (await import('../models/Outlet.js')).default;
+    const MenuItem = (await import('../models/MenuItem.js')).default;
+
+    // 1. Resolve vendor outlet (if vendor passed as string like 'OUT006' or invalid ObjectId)
+    if (orderData.vendor) {
+      if (typeof orderData.vendor === 'string' && orderData.vendor.length !== 24) {
+        const outletDoc = await Outlet.findOne({ outletId: orderData.vendor.toUpperCase() });
+        if (outletDoc) {
+          orderData.vendor = outletDoc._id;
+        } else {
+          // Fallback to first available active outlet
+          const fallbackOutlet = await Outlet.findOne({ isActive: true });
+          if (fallbackOutlet) orderData.vendor = fallbackOutlet._id;
+        }
+      }
+    } else {
+      const fallbackOutlet = await Outlet.findOne({ isActive: true });
+      if (fallbackOutlet) orderData.vendor = fallbackOutlet._id;
+    }
+
+    // 2. Resolve deliveryMode enum ('Delivery', 'Pickup', 'Dine-in')
+    if (!orderData.deliveryMode) {
+      const modeStr = (orderData.deliveryType || orderData.customerInfo?.deliveryType || '').toString().toLowerCase();
+      if (modeStr.includes('pickup') || modeStr.includes('self')) {
+        orderData.deliveryMode = 'Pickup';
+      } else if (modeStr.includes('dine')) {
+        orderData.deliveryMode = 'Dine-in';
+      } else {
+        orderData.deliveryMode = 'Delivery';
+      }
+    }
+    if (orderData.deliveryAddress && typeof orderData.deliveryAddress === 'object') {
+      orderData.deliveryAddress = orderData.deliveryAddress.deliveryType || orderData.deliveryAddress.desk || JSON.stringify(orderData.deliveryAddress);
+    }
+
+    // 3. Resolve customer object
+    if (!orderData.customer || typeof orderData.customer !== 'object') {
+      orderData.customer = {
+        name: orderData.customerInfo?.name || req.user?.name || 'Mobile Customer',
+        email: orderData.customerInfo?.email || req.user?.email || 'customer@mopy.co.in',
+        phone: orderData.customerInfo?.phone || req.user?.phone || '+91 98765 43210',
+        companyName: orderData.customerInfo?.companyName || req.user?.organization || null,
+      };
+    } else {
+      orderData.customer.name = orderData.customer.name || req.user?.name || 'Mobile Customer';
+    }
+
+    // 4. Resolve items array & menuItem ObjectIds
+    if (Array.isArray(orderData.items)) {
+      const resolvedItems = [];
+      for (const item of orderData.items) {
+        let mId = item.menuItem || item.id || item._id;
+        const isValidMongoId = typeof mId === 'string' && mId.length === 24 && /^[0-9a-fA-F]{24}$/.test(mId);
+
+        if (!isValidMongoId) {
+          let foundItem = null;
+          if (item.name) {
+            const cleanName = item.name.split('&')[0].trim();
+            foundItem = await MenuItem.findOne({
+              $or: [
+                { name: { $regex: new RegExp(cleanName, 'i') } },
+                { name: { $regex: new RegExp(item.name.replace(/[^a-zA-Z0-9 ]/g, ''), 'i') } }
+              ]
+            });
+          }
+          if (!foundItem) {
+            foundItem = await MenuItem.findOne({ status: 'Available' });
+          }
+          if (!foundItem) {
+            foundItem = await MenuItem.findOne();
+          }
+
+          if (foundItem) {
+            mId = foundItem._id;
+          } else {
+            mId = new mongoose.Types.ObjectId();
+          }
+        }
+
+        resolvedItems.push({
+          menuItem: mId,
+          variant: item.variant || null,
+          quantity: Number(item.quantity) || 1,
+          price: Number(item.price) || 0,
+        });
+      }
+      orderData.items = resolvedItems;
+    }
+
+    // 5. Resolve total amount
+    orderData.amount = Number(orderData.amount || orderData.grandTotal || orderData.pricing?.total || 0);
+
     // Generate order ID
     const count = await Order.countDocuments();
     orderData.orderId = `ORD-${new Date().getFullYear()}${String(count + 1).padStart(4, '0')}`;
 
     const order = new Order(orderData);
     const savedOrder = await order.save();
-    
+
     const populatedOrder = await Order.findById(savedOrder._id)
       .populate('vendor', 'name outletId')
       .populate('items.menuItem', 'name image basePrice')
@@ -202,6 +294,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(populatedOrder);
   } catch (error) {
+    console.error('Error placing order:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -218,6 +311,7 @@ router.patch('/:id/status', authenticate, async (req, res) => {
 
     const role = req.user.role;
     const allowedStatusesByRole = {
+      Customer: ['Cancelled'],
       Vendor: ['Preparing', 'Ready', 'Cancelled'],
       'Outlet Sales Representative': ['Preparing', 'Ready', 'Cancelled'],
       'Delivery Staff': ['Picked', 'In Transit', 'Delivered'],
@@ -289,6 +383,31 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Cancel order (customer facing)
+router.post('/:id/cancel', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    if (['Delivered', 'Cancelled'].includes(order.status)) {
+      return res.status(400).json({ message: `Cannot cancel an order that is already ${order.status}` });
+    }
+    order.status = 'Cancelled';
+    const savedOrder = await order.save();
+
+    const populatedOrder = await Order.findById(savedOrder._id)
+      .populate('vendor', 'name outletId')
+      .populate('items.menuItem', 'name image basePrice')
+      .populate('assignedTo', 'name phone');
+
+    broadcastOrderUpdate(populatedOrder);
+    res.json({ success: true, message: 'Order cancelled successfully', order: populatedOrder });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

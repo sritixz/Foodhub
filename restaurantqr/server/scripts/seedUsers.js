@@ -16,28 +16,13 @@ const seedUsers = async () => {
     await User.deleteMany({});
     console.log('Cleared existing users');
  
-    // Create a default outlet if none exists (for users that need outlet assignment)
-    let defaultOutlet = await Outlet.findOne();
-    if (!defaultOutlet) {
-      defaultOutlet = await Outlet.create({
-        name: 'Main Restaurant',
-        outletId: 'OUT001',
-        businessType: 'Restaurant',
-        fssaiLicense: 'FSSAI123456',
-        contact: {
-          name: 'Restaurant Owner',
-          email: 'owner@restaurant.com',
-          phone: '1234567890',
-        },
-        location: {
-          address: '123 Main Street',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          zone: 'North Zone',
-        },
-      });
-      console.log('Created default outlet:', defaultOutlet.name);
-    }
+    // Ensure official 11 outlets exist first
+    const { seedOfficialOutlets } = await import('./seedOutlets.js');
+    await seedOfficialOutlets();
+
+    // Fetch official default outlet (Deepak Nitrite Limited)
+    let defaultOutlet = await Outlet.findOne({ outletId: 'CORP001' }) || await Outlet.findOne();
+    console.log('Using default outlet for staff:', defaultOutlet.name, `(${defaultOutlet.outletId})`);
 
     // Define users to seed
     const users = [
@@ -96,12 +81,27 @@ const seedUsers = async () => {
         status: 'Active',
       },
       {
-        name: 'Customer User',
-        email: 'employee@foodhub.com',
+        name: 'Corporate Customer User',
+        email: 'customer@foodhub.com',
         phone: '4444444444',
-        password: 'employee123',
+        password: 'customer123',
         role: 'Customer',
-        outlet: null,
+        organization: 'Deepak Nitrite Limited',
+        companyCategory: 'Corporate Client',
+        assignedCompany: 'Deepak Nitrite Limited',
+        outlet: defaultOutlet._id,
+        status: 'Active',
+      },
+      {
+        name: 'Commercial Customer User',
+        email: 'commercial.customer@foodhub.com',
+        phone: '4444444445',
+        password: 'customer123',
+        role: 'Customer',
+        organization: 'Panorama Complex- Alkapuri',
+        companyCategory: 'Commercial/Office Complex',
+        assignedCompany: 'Panorama Complex- Alkapuri',
+        outlet: (await Outlet.findOne({ outletId: 'COMM001' }))?._id || defaultOutlet._id,
         status: 'Active',
       },
       {

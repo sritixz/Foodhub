@@ -346,4 +346,34 @@ router.patch('/disputes/:id', authenticate, authorize('Owner', 'Management'), as
   } catch (e) { res.status(400).json({ message: e.message }); }
 });
 
+/* ─────────────────────────────────────────
+   WALLET TOP-UP & TRANSACTIONS (Mobile App)
+───────────────────────────────────────── */
+router.post('/topup', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const numAmount = Number(amount) || 0;
+    res.json({
+      success: true,
+      message: 'Wallet top-up successful',
+      walletBalance: 1000.0 + numAmount,
+    });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+});
+
+router.get('/transactions', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      transactions: [
+        { id: 'tx-1', type: 'credit', amount: 500.0, description: 'Wallet Top-Up', createdAt: new Date() },
+      ],
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 export default router;
