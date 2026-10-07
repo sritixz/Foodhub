@@ -65,7 +65,9 @@ const AddOutlet = () => {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    businessType: 'Dine-In',
+    businessType: 'Restaurant',
+    category: 'Corporate Client',
+    isPrivate: true,
     fssaiLicense: '',
     contact: {
       name: '',
@@ -249,6 +251,8 @@ const AddOutlet = () => {
       const outletData = {
         name: formData.name,
         businessType: formData.businessType,
+        category: formData.category,
+        isPrivate: formData.isPrivate,
         fssaiLicense: formData.fssaiLicense,
         contact: {
           name: formData.contact.name,

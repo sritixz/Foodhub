@@ -222,6 +222,8 @@ const EditOutlet = () => {
       const outletData = {
         name: formData.name,
         businessType: formData.businessType,
+        category: formData.category || 'Corporate Client',
+        isPrivate: formData.isPrivate !== undefined ? formData.isPrivate : true,
         fssaiLicense: formData.fssaiLicense,
         contact: {
           name: formData.contact?.name || '',

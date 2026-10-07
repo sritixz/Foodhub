@@ -107,6 +107,8 @@ const UserManagement = () => {
       phone: '',
       role: allowedRoles.includes('Customer') ? 'Customer' : allowedRoles[0],
       organization: user?.organization || '',
+      companyCategory: 'Corporate Client',
+      assignedCompany: '',
       outlet: '',
       password: '',
       status: 'Active',
@@ -129,6 +131,8 @@ const UserManagement = () => {
       phone: selectedUser.phone || '',
       role: selectedUser.role || 'Customer',
       organization: selectedUser.organization || user?.organization || '',
+      companyCategory: selectedUser.companyCategory || 'Corporate Client',
+      assignedCompany: selectedUser.assignedCompany || selectedUser.organization || '',
       outlet: selectedUser.outlet?._id || selectedUser.outlet || '',
       password: '',
       status: selectedUser.status || 'Active',
@@ -167,7 +171,9 @@ const UserManagement = () => {
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
-        organization: formData.organization || undefined,
+        organization: formData.assignedCompany || formData.organization || undefined,
+        companyCategory: formData.companyCategory,
+        assignedCompany: formData.assignedCompany,
         outlet: formData.outlet || null,
         status: formData.status,
         investmentAmount: formData.role === 'Investment Partner' ? Number(formData.investmentAmount) || 0 : undefined,
@@ -312,7 +318,7 @@ const UserManagement = () => {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                       No users found
                     </td>
                   </tr>
@@ -431,18 +437,30 @@ const UserManagement = () => {
                   onChange={(e) => handleFormChange('role', e.target.value)}
                   options={allowedRoles}
                 />
-                <Input
-                  label="Organization"
-                  value={formData.organization}
-                  onChange={(e) => handleFormChange('organization', e.target.value)}
-                  placeholder="Organization name"
-                  disabled={user?.role === 'Management'}
+                <Select
+                  label="Client Category"
+                  value={formData.companyCategory}
+                  onChange={(e) => handleFormChange('companyCategory', e.target.value)}
+                  options={['Corporate Client', 'Commercial/Office Complex']}
                 />
                 <Select
-                  label="Outlet"
+                  label="Assigned Company / Outlet Location"
                   value={formData.outlet}
-                  onChange={(e) => handleFormChange('outlet', e.target.value)}
-                  options={['', ...outlets.map((outlet) => ({ label: outlet.name, value: outlet._id }))]}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    const selectedObj = outlets.find((o) => o._id === selectedId);
+                    handleFormChange('outlet', selectedId);
+                    if (selectedObj) {
+                      handleFormChange('assignedCompany', selectedObj.name);
+                      if (selectedObj.category) {
+                        handleFormChange('companyCategory', selectedObj.category);
+                      }
+                    }
+                  }}
+                  options={[
+                    { label: '-- Select Base Location --', value: '' },
+                    ...outlets.map((outlet) => ({ label: `${outlet.name} (${outlet.category || 'Outlet'})`, value: outlet._id }))
+                  ]}
                 />
                 <Select
                   label="Status"
