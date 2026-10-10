@@ -6,7 +6,19 @@ import QRCodeLib from 'qrcode';
 import authenticate from '../middleware/auth.js';
 import authorize from '../middleware/roleAuth.js';
 
+import Location from '../models/Location.js';
+
 const router = express.Router();
+
+// Get corporate delivery locations (mobile app compatibility)
+router.get('/locations', async (req, res) => {
+  try {
+    const locations = await Location.find().sort({ createdAt: -1 });
+    res.json(locations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Get all outlets
 router.get('/', async (req, res) => {

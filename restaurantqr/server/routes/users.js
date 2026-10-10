@@ -5,7 +5,7 @@ import authenticate from '../middleware/auth.js';
 import authorize from '../middleware/roleAuth.js';
 
 const router = express.Router();
-const MANAGEMENT_ALLOWED_ROLES = ['Outlet Sales Representative', 'Driver', 'Customer'];
+const MANAGEMENT_ALLOWED_ROLES = ['Outlet Sales Representative', 'Driver', 'Delivery Staff', 'Customer'];
 
 const applyManagementScope = (query, user) => {
   if (user.role !== 'Management') {

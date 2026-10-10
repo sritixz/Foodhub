@@ -101,6 +101,19 @@ router.get('/', authenticate, async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
+    // Role-based scoping: Customers only see their own orders
+    if (req.user && req.user.role === 'Customer') {
+      const orConditions = [];
+      if (req.user.email) orConditions.push({ 'customer.email': req.user.email });
+      if (req.user.phone) orConditions.push({ 'customer.phone': req.user.phone });
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
+    } else if (req.user && ['Delivery Staff', 'Driver'].includes(req.user.role) && !req.query.all) {
+      // Delivery staff see orders assigned to them by default
+      query.assignedTo = req.user._id;
+    }
+
     const orders = await Order.find(query)
       .populate('vendor', 'name outletId')
       .populate('items.menuItem', 'name image basePrice')
@@ -685,6 +698,27 @@ router.patch('/:id/cancel', async (req, res) => {
       relatedModel: 'Order',
     });
     res.json(populatedOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Submit customer order rating & feedback
+router.post('/:id/rating', async (req, res) => {
+  try {
+    const { rating, feedback } = req.body;
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      {
+        customerRating: Number(rating) || 5,
+        ...(feedback ? { notes: feedback } : {})
+      },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.json({ success: true, message: 'Rating submitted successfully', order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

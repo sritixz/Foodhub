@@ -58,13 +58,44 @@ const userSchema = new mongoose.Schema(
     ],
     role: {
       type: String,
-      enum: ['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Driver', 'Investment Partner', 'Non-Core Staff', 'Customer'],
+      enum: ['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative', 'Driver', 'Delivery Staff', 'Investment Partner', 'Non-Core Staff', 'Customer'],
       required: true,
     },
     outlet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Outlet',
       default: null,
+    },
+    dutyStatus: {
+      type: String,
+      enum: ['Online', 'Offline', 'On Break'],
+      default: 'Offline',
+    },
+    assignedZone: {
+      outlet: { type: mongoose.Schema.Types.ObjectId, ref: 'Outlet', default: null },
+      officeComplex: { type: String, default: null },
+      buildings: [{ type: String }],
+      floors: [{ type: String }],
+    },
+    kycDocuments: {
+      photoUrl: { type: String, default: null },
+      idProofType: { type: String, default: 'Aadhaar' },
+      idProofUrl: { type: String, default: null },
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date, default: null },
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['Pending', 'Approved', 'Suspended'],
+      default: 'Approved',
+    },
+    vehicleType: {
+      type: String,
+      default: 'On Foot',
+    },
+    maxCapacity: {
+      type: Number,
+      default: 4,
     },
     password: {
       type: String,

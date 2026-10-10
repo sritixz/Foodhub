@@ -51,6 +51,7 @@ router.post('/login', async (req, res) => {
       .select('-password');
 
     res.json({
+      success: true,
       token,
       user: userResponse,
       expiresIn: process.env.JWT_EXPIRE || '7d',
@@ -162,6 +163,22 @@ router.get('/me', authenticate, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Mobile app profile alias
+router.get('/profile', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .populate('outlet', 'name outletId')
+      .select('-password');
+
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
