@@ -130,6 +130,70 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    deliveryDeskInfo: {
+      building: { type: String, default: null },
+      tower: { type: String, default: null },
+      floor: { type: String, default: null },
+      desk: { type: String, default: null },
+      landmark: { type: String, default: null },
+      instructions: { type: String, default: null },
+    },
+    batchRunId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DeliveryBatch',
+      default: null,
+    },
+    pickupChecklist: [
+      {
+        menuItem: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' },
+        name: { type: String },
+        quantity: { type: Number },
+        verified: { type: Boolean, default: false },
+      },
+    ],
+    slaDeadline: {
+      type: Date,
+      default: null,
+    },
+    isPriority: {
+      type: Boolean,
+      default: false,
+    },
+    isSubscription: {
+      type: Boolean,
+      default: false,
+    },
+    reassignmentDeadline: {
+      type: Date,
+      default: null,
+    },
+    rejectedBy: [
+      {
+        runner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    proofOfDelivery: {
+      timestamp: { type: Date, default: null },
+      runner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      handoverType: { type: String, enum: ['Direct Desk', 'Colleague', 'Reception', null], default: null },
+      recipientName: { type: String, default: null },
+      recipientPhone: { type: String, default: null },
+      photoUrl: { type: String, default: null },
+      notes: { type: String, default: null },
+    },
+    deliveryException: {
+      reason: {
+        type: String,
+        enum: ['Customer Unavailable', 'Wrong Desk', 'Spill/Damage', 'Access Denied', 'Return to Kiosk', 'Reception Handover', null],
+        default: null,
+      },
+      comment: { type: String, default: null },
+      receptionName: { type: String, default: null },
+      receptionContact: { type: String, default: null },
+      reportedAt: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,

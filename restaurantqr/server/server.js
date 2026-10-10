@@ -25,6 +25,7 @@ import ledgerRoutes from './routes/ledger.js';
 import dailyMenuRoutes from './routes/dailyMenu.js';
 import investorRoutes from './routes/investors.js';
 import makerCheckerRoutes from './routes/makerCheckerRoutes.js';
+import deliveryRoutes from './routes/delivery.js';
 import { seedOfficialOutlets } from './scripts/seedOutlets.js';
 
 // Load environment variables
@@ -71,6 +72,7 @@ app.use('/api/ledger', ledgerRoutes);
 app.use('/api/daily-menu', dailyMenuRoutes);
 app.use('/api/investors', investorRoutes);
 app.use('/api/maker-checker', makerCheckerRoutes);
+app.use('/api/delivery', deliveryRoutes);
 // QR Code public endpoint (for scanning)
 app.get('/qr/:qrData', async (req, res) => {
   try {

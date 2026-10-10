@@ -724,4 +724,5 @@ router.post('/:id/rating', async (req, res) => {
   }
 });
 
+export { broadcastOrderUpdate };
 export default router;
