@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import DeliveryBatch from '../models/DeliveryBatch.js';
+import DeliveryShift from '../models/DeliveryShift.js';
+import RunnerEarnings from '../models/RunnerEarnings.js';
 import Notification from '../models/Notification.js';
 import authenticate from '../middleware/auth.js';
 import { broadcastOrderUpdate } from './orders.js';
@@ -353,6 +355,218 @@ router.get('/duty/status', authenticate, async (req, res) => {
       dutyStatus: req.user.dutyStatus || 'Online',
       activeTasksCount,
       maxCapacity: req.user.maxCapacity || 4,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 12. Shift Clock-In
+router.post('/shift/clock-in', authenticate, async (req, res) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    let shift = await DeliveryShift.findOne({
+      runner: req.user._id,
+      status: 'Active',
+      createdAt: { $gte: todayStart },
+    });
+
+    if (!shift) {
+      shift = await DeliveryShift.create({
+        runner: req.user._id,
+        dutyDate: new Date(),
+        clockInTime: new Date(),
+        campus: req.user.assignedZone?.officeComplex || 'Embassy TechVillage',
+        outlet: req.user.outlet,
+        status: 'Active',
+      });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, { dutyStatus: 'Online' });
+
+    res.json({ success: true, shift });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 13. Shift Clock-Out & Summary
+router.post('/shift/clock-out', authenticate, async (req, res) => {
+  try {
+    const shift = await DeliveryShift.findOne({
+      runner: req.user._id,
+      status: 'Active',
+    }).sort({ createdAt: -1 });
+
+    const now = new Date();
+    let totalOnlineMinutes = 0;
+    if (shift) {
+      const diffMs = now.getTime() - new Date(shift.clockInTime).getTime();
+      totalOnlineMinutes = Math.max(1, Math.round(diffMs / 60000));
+      shift.clockOutTime = now;
+      shift.totalOnlineMinutes = totalOnlineMinutes;
+      shift.status = 'Completed';
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const deliveredOrders = await Order.find({
+      assignedTo: req.user._id,
+      status: 'Delivered',
+      updatedAt: { $gte: todayStart },
+    });
+
+    const deliveriesCount = deliveredOrders.length;
+    const onTimeDeliveries = deliveredOrders.filter(
+      (o) => !o.slaDeadline || new Date(o.updatedAt) <= new Date(o.slaDeadline)
+    ).length;
+
+    const slaRate = deliveriesCount > 0 ? (onTimeDeliveries / deliveriesCount) * 100 : 100.0;
+
+    if (shift) {
+      shift.totalDeliveries = deliveriesCount;
+      shift.onTimeDeliveries = onTimeDeliveries;
+      shift.slaRate = Math.round(slaRate * 10) / 10;
+      await shift.save();
+    }
+
+    // Calculate earnings
+    const baseShiftPay = 350.0;
+    const perOrderPay = deliveriesCount * 30.0;
+    const batchBonus = Math.floor(deliveriesCount / 3) * 20.0;
+    const tips = 0.0;
+    const netEarnings = baseShiftPay + perOrderPay + batchBonus + tips;
+
+    let earnings = await RunnerEarnings.findOne({
+      runner: req.user._id,
+      date: { $gte: todayStart },
+    });
+
+    if (!earnings) {
+      earnings = await RunnerEarnings.create({
+        runner: req.user._id,
+        shift: shift ? shift._id : null,
+        date: new Date(),
+        deliveriesCount,
+        baseShiftPay,
+        perOrderPay,
+        batchBonus,
+        tips,
+        netEarnings,
+        settlementStatus: 'Pending',
+      });
+    } else {
+      earnings.deliveriesCount = deliveriesCount;
+      earnings.perOrderPay = perOrderPay;
+      earnings.batchBonus = batchBonus;
+      earnings.netEarnings = netEarnings;
+      await earnings.save();
+    }
+
+    await User.findByIdAndUpdate(req.user._id, { dutyStatus: 'Offline' });
+
+    res.json({
+      success: true,
+      message: 'Shift closed successfully',
+      shift,
+      earnings,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 14. Earnings Summary (Today & Weekly)
+router.get('/earnings/summary', authenticate, async (req, res) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const deliveredToday = await Order.countDocuments({
+      assignedTo: req.user._id,
+      status: 'Delivered',
+      updatedAt: { $gte: todayStart },
+    });
+
+    let todayEarnings = await RunnerEarnings.findOne({
+      runner: req.user._id,
+      date: { $gte: todayStart },
+    });
+
+    const basePay = 350.0;
+    const orderPay = deliveredToday * 30.0;
+    const batchBonus = Math.floor(deliveredToday / 3) * 20.0;
+    const tips = todayEarnings?.tips || 0.0;
+    const net = basePay + orderPay + batchBonus + tips;
+
+    // Past 7 days calculation
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const pastEarnings = await RunnerEarnings.find({
+      runner: req.user._id,
+      date: { $gte: sevenDaysAgo },
+    });
+
+    const weeklyTotal = pastEarnings.reduce((acc, curr) => acc + curr.netEarnings, 0) + net;
+
+    res.json({
+      success: true,
+      today: {
+        deliveriesCount: deliveredToday,
+        baseShiftPay: basePay,
+        perOrderPay: orderPay,
+        batchBonus,
+        tips,
+        netEarnings: net,
+        settlementStatus: todayEarnings?.settlementStatus || 'Pending',
+      },
+      weeklyTotal,
+      weeklyDeliveries: pastEarnings.reduce((acc, curr) => acc + curr.deliveriesCount, 0) + deliveredToday,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 15. Earnings & Shift History
+router.get('/earnings/history', authenticate, async (req, res) => {
+  try {
+    const history = await RunnerEarnings.find({ runner: req.user._id })
+      .sort({ date: -1 })
+      .limit(30)
+      .populate('shift');
+
+    res.json({ success: true, history });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 16. Raise Earnings Dispute / Ticket
+router.post('/disputes', authenticate, async (req, res) => {
+  try {
+    const { reason, notes, earningsId } = req.body;
+    if (!reason) {
+      return res.status(400).json({ message: 'Dispute reason is required' });
+    }
+
+    if (earningsId) {
+      await RunnerEarnings.findByIdAndUpdate(earningsId, {
+        settlementStatus: 'Disputed',
+        disputeReason: reason,
+        disputeNotes: notes || '',
+      });
+    }
+
+    res.json({
+      success: true,
+      ticketId: `DISP-${Date.now().toString().slice(-6)}`,
+      message: 'Dispute ticket registered. Operations manager will review within 24 hours.',
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
