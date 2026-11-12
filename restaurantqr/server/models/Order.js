@@ -56,8 +56,8 @@ const orderSchema = new mongoose.Schema(
     },
     orderType: {
       type: String,
-      enum: ['Retail', 'Bulk', 'QR'],
-      required: true,
+      enum: ['Retail', 'Corporate', 'Bulk', 'QR', 'Manual Sale', 'POS', 'Subscription'],
+      default: 'Retail',
     },
     vendor: {
       type: mongoose.Schema.Types.ObjectId,
@@ -66,8 +66,8 @@ const orderSchema = new mongoose.Schema(
     },
     deliveryMode: {
       type: String,
-      enum: ['Delivery', 'Pickup', 'Dine-in'],
-      required: true,
+      enum: ['Delivery', 'Pickup', 'Dine-in', 'Desk Delivery'],
+      default: 'Delivery',
     },
     items: [orderItemSchema],
     amount: {
@@ -80,7 +80,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['upi', 'card', 'netbanking', 'cash', 'cod', null],
+      enum: ['upi', 'card', 'netbanking', 'cash', 'cod', 'wallet', 'corporate_wallet', null],
       default: null,
     },
     paymentStatus: {
@@ -90,7 +90,7 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['New', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
+      enum: ['New', 'Accepted', 'Preparing', 'Ready', 'Picked', 'In Transit', 'Delivered', 'Cancelled'],
       default: 'New',
     },
     deliveryAddress: {

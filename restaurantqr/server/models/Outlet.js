@@ -32,6 +32,18 @@ const outletSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    investors: [
+      {
+        investor: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        equityPercentage: { type: Number, default: 0 },
+        assuredReturnRate: { type: Number, default: 18 },
+        profitSharePercentage: { type: Number, default: 50 },
+        effectiveDate: { type: Date, default: Date.now },
+      },
+    ],
     customPrices: [
       {
         menuItem: {

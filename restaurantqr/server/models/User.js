@@ -33,6 +33,48 @@ const userSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+    customerType: {
+      type: String,
+      enum: ['Corporate', 'Retail'],
+      default: 'Corporate',
+    },
+    campus: {
+      type: String,
+      default: null,
+    },
+    floor: {
+      type: String,
+      default: null,
+    },
+    desk: {
+      type: String,
+      default: null,
+    },
+    membership: {
+      type: String,
+      default: 'MOPY Member',
+    },
+    availablePoints: {
+      type: Number,
+      default: 0,
+    },
+    addressBook: [
+      {
+        label: { type: String, default: 'Home' },
+        addressLine: { type: String, required: true },
+        landmark: { type: String, default: '' },
+        city: { type: String, default: 'Mumbai' },
+        postalCode: { type: String, default: '' },
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
+    dietaryPreferences: [{ type: String }],
+    mappedKiosks: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Outlet',
+      },
+    ],
     walletBalance: {
       type: Number,
       default: 0,

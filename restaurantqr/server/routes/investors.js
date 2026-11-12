@@ -1,6 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Outlet from '../models/Outlet.js';
+import Order from '../models/Order.js';
 import DailyLedger from '../models/DailyLedger.js';
 import InvestorPayout from '../models/InvestorPayout.js';
 import { authenticate } from '../middleware/auth.js';
@@ -8,7 +10,7 @@ import { authorize } from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
-// Helper to calculate investor payout details
+// Helper to calculate investor payout details (Supports Multi-Kiosk & Multi-Investor Splits)
 export const calculateInvestorPayoutDetails = async (investor, startStr, endStr) => {
   const start = new Date(startStr);
   const end = new Date(endStr);
@@ -25,34 +27,65 @@ export const calculateInvestorPayoutDetails = async (investor, startStr, endStr)
   const annualAssured = (investor.investmentAmount || 0) * ((investor.assuredReturnRate || 18) / 100);
   const assuredAmount = (annualAssured / 365) * daysInPeriod;
 
-  // Find daily ledgers within range
-  const ledgers = await DailyLedger.find({
-    outlet: investor.outlet,
-    date: { $gte: startStr, $lte: endStr },
-    status: { $in: ['Submitted', 'Approved'] } // Include submitted and approved ledgers
+  // Determine all outlets mapped to this investor
+  const outletIds = new Set();
+  if (investor.outlet) outletIds.add(investor.outlet._id ? investor.outlet._id.toString() : investor.outlet.toString());
+  if (Array.isArray(investor.mappedKiosks)) {
+    investor.mappedKiosks.forEach((k) => {
+      if (k) outletIds.add(k._id ? k._id.toString() : k.toString());
+    });
+  }
+
+  const mappedOutlets = await Outlet.find({
+    $or: [
+      { _id: { $in: Array.from(outletIds) } },
+      { 'investors.investor': investor._id },
+    ],
   });
 
   let totalOutletProfit = 0;
-  ledgers.forEach(ledger => {
-    totalOutletProfit += ledger.financials?.netProfit || 0;
-  });
+  let totalInvestorProfitShare = 0;
 
-  const profitShareAmount = totalOutletProfit * ((investor.profitSharePercentage || 50) / 100);
-  const netPayout = Math.max(profitShareAmount, assuredAmount);
+  for (const out of mappedOutlets) {
+    const ledgers = await DailyLedger.find({
+      outlet: out._id,
+      date: { $gte: startStr, $lte: endStr },
+      status: { $in: ['Submitted', 'Approved'] },
+    });
+
+    let outletProfit = 0;
+    ledgers.forEach((l) => {
+      outletProfit += l.financials?.netProfit || 0;
+    });
+    totalOutletProfit += outletProfit;
+
+    // Check if this outlet has explicit multi-investor split configured
+    const invConfig = (out.investors || []).find(
+      (i) => i.investor && i.investor.toString() === investor._id.toString()
+    );
+    const sharePct = invConfig ? (invConfig.profitSharePercentage || 50) : (investor.profitSharePercentage || 50);
+    const equityFactor = (invConfig && invConfig.equityPercentage > 0 && out.investors.length > 1)
+      ? (invConfig.equityPercentage / 100)
+      : 1;
+
+    totalInvestorProfitShare += outletProfit * (sharePct / 100) * equityFactor;
+  }
+
+  const netPayout = Math.max(totalInvestorProfitShare, assuredAmount);
 
   return {
     daysInPeriod,
     totalOutletProfit,
-    profitShareAmount,
+    profitShareAmount: totalInvestorProfitShare,
     assuredAmount,
-    netPayout
+    netPayout,
   };
 };
 
 // @route   POST /api/investors/calculate-payout
 // @desc    Calculate potential investor payout for a date range
 // @access  Admin, Company Admin
-router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin'), async (req, res) => {
+router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin', 'Owner', 'Management'), async (req, res) => {
   try {
     const { investorId, periodStart, periodEnd } = req.body;
 
@@ -69,10 +102,6 @@ router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin
       return res.status(400).json({ message: 'User is not registered as an Investor' });
     }
 
-    if (!investor.outlet) {
-      return res.status(400).json({ message: 'Investor is not linked to any outlet' });
-    }
-
     const calculation = await calculateInvestorPayoutDetails(investor, periodStart, periodEnd);
 
     res.json({
@@ -85,11 +114,11 @@ router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin
         assuredReturnRate: investor.assuredReturnRate,
         profitSharePercentage: investor.profitSharePercentage,
       },
-      outlet: {
+      outlet: investor.outlet ? {
         id: investor.outlet._id,
         name: investor.outlet.name,
         outletId: investor.outlet.outletId,
-      },
+      } : null,
       periodStart,
       periodEnd,
       ...calculation
@@ -101,28 +130,78 @@ router.post('/calculate-payout', authenticate, authorize('Admin', 'Company Admin
 });
 
 // @route   GET /api/investors/stats
-// @desc    Get dashboard stats for logged-in or specific investor
-// @access  Investor, Admin, Company Admin
+// @desc    Get live dashboard stats, mapped kiosks, and P&L for logged-in or specific investor
+// @access  Investor, Admin, Company Admin, Owner
 router.get('/stats', authenticate, async (req, res) => {
   try {
-    let investorId = req.user.id;
+    let investorId = req.user._id || req.user.id;
 
     // Admins can request stats for any specific investor
-    if (['Admin', 'Company Admin'].includes(req.user.role) && req.query.investorId) {
+    if (['Admin', 'Company Admin', 'Owner', 'Management'].includes(req.user.role) && req.query.investorId) {
       investorId = req.query.investorId;
     }
 
-    const investor = await User.findById(investorId).populate('outlet', 'name outletId');
+    const investor = await User.findById(investorId)
+      .populate('outlet', 'name outletId location isActive')
+      .populate('mappedKiosks', 'name outletId location isActive');
     if (!investor) {
       return res.status(404).json({ message: 'Investor not found' });
     }
 
-    if (!['Investor', 'Investment Partner'].includes(investor.role)) {
+    if (!['Investor', 'Investment Partner', 'Owner', 'Management'].includes(investor.role)) {
       return res.status(400).json({ message: 'User is not an Investor' });
     }
 
+    // Collect all mapped outlets
+    const outletIds = new Set();
+    if (investor.outlet) outletIds.add(investor.outlet._id.toString());
+    if (Array.isArray(investor.mappedKiosks)) {
+      investor.mappedKiosks.forEach((k) => outletIds.add(k._id.toString()));
+    }
+
+    const outlets = await Outlet.find({
+      $or: [
+        { _id: { $in: Array.from(outletIds) } },
+        { 'investors.investor': investor._id },
+      ],
+    });
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const kiosksSummary = [];
+    for (const out of outlets) {
+      const todayOrders = await Order.find({
+        vendor: out._id,
+        createdAt: { $gte: todayStart },
+        status: { $ne: 'Cancelled' },
+      });
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
+
+      kiosksSummary.push({
+        id: out._id,
+        outletId: out.outletId,
+        name: out.name,
+        location: out.location?.address || out.location?.city || '',
+        isOnline: out.isActive !== false,
+        todayRevenue,
+        todayOrders: todayOrders.length,
+        avgOrderValue: todayOrders.length > 0 ? Math.round(todayRevenue / todayOrders.length) : 0,
+      });
+    }
+
+    // Get recent daily ledgers across mapped outlets
+    const recentLedgers = await DailyLedger.find({
+      outlet: { $in: outlets.map((o) => o._id) },
+    })
+      .populate('outlet', 'name outletId')
+      .sort({ date: -1 })
+      .limit(30);
+
     // Get payout summaries (Paid vs Pending/Processing)
-    const payouts = await InvestorPayout.find({ investor: investorId });
+    const payouts = await InvestorPayout.find({ investor: investor._id })
+      .populate('outlet', 'name outletId')
+      .sort({ createdAt: -1 });
     const totalPaidOut = payouts
       .filter(p => p.status === 'Paid')
       .reduce((sum, p) => sum + p.netPayout, 0);
@@ -133,7 +212,8 @@ router.get('/stats', authenticate, async (req, res) => {
 
     // Calculate current month's estimated accrual so far
     let currentMonthAccrual = 0;
-    if (investor.outlet) {
+    let mtdDetails = null;
+    if (outlets.length > 0) {
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -141,17 +221,20 @@ router.get('/stats', authenticate, async (req, res) => {
       const endStr = now.toISOString().split('T')[0];
 
       try {
-        const est = await calculateInvestorPayoutDetails(investor, startStr, endStr);
-        currentMonthAccrual = est.netPayout;
+        mtdDetails = await calculateInvestorPayoutDetails(investor, startStr, endStr);
+        currentMonthAccrual = mtdDetails.netPayout;
       } catch (err) {
         console.error('Error estimating current month accrual:', err.message);
       }
     }
 
     res.json({
+      success: true,
       investor: {
         id: investor._id,
         name: investor.name,
+        email: investor.email,
+        phone: investor.phone,
         investmentAmount: investor.investmentAmount || 0,
         assuredReturnRate: investor.assuredReturnRate || 18,
         profitSharePercentage: investor.profitSharePercentage || 50,
@@ -160,7 +243,11 @@ router.get('/stats', authenticate, async (req, res) => {
         id: investor.outlet._id,
         name: investor.outlet.name,
         outletId: investor.outlet.outletId,
-      } : null,
+      } : (outlets[0] ? { id: outlets[0]._id, name: outlets[0].name, outletId: outlets[0].outletId } : null),
+      kiosks: kiosksSummary,
+      dailyLedgers: recentLedgers,
+      payouts,
+      mtdDetails,
       stats: {
         totalPaidOut,
         pendingPayout,

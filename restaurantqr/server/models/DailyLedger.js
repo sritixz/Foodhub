@@ -55,7 +55,11 @@ const ledgerItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: 0,
-  }
+  },
+  closingStock: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const dailyLedgerSchema = new mongoose.Schema(
@@ -72,7 +76,7 @@ const dailyLedgerSchema = new mongoose.Schema(
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
     },
     items: [ledgerItemSchema],
     collections: {
@@ -93,6 +97,28 @@ const dailyLedgerSchema = new mongoose.Schema(
       grossProfit: { type: Number, default: 0 },
       indirectExpenses: { type: Number, default: 0 },
       netProfit: { type: Number, default: 0 },
+    },
+    receiptConfirmation: {
+      confirmedBy: { type: String },
+      confirmedAt: { type: Date },
+      comments: { type: String },
+      items: [{ type: mongoose.Schema.Types.Mixed }],
+    },
+    settlement: {
+      openingCash: { type: Number, default: 0 },
+      cashSales: { type: Number, default: 0 },
+      cashRefunds: { type: Number, default: 0 },
+      pettyCashExpenses: { type: Number, default: 0 },
+      countedPhysicalCash: { type: Number, default: 0 },
+      expectedCash: { type: Number, default: 0 },
+      variance: { type: Number, default: 0 },
+      digitalPaymentsTotal: { type: Number, default: 0 },
+      manualCounterSalesTotal: { type: Number, default: 0 },
+      discrepancyNotes: { type: String, default: '' },
+      denominations: [{ type: mongoose.Schema.Types.Mixed }],
+      submittedBy: { type: String },
+      submittedAt: { type: Date },
+      status: { type: String, default: 'Pending' },
     },
     status: {
       type: String,

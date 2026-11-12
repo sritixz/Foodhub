@@ -1,11 +1,48 @@
 import express from 'express';
-import { authenticate} from '../middleware/auth.js';
-import {authorize } from '../middleware/roleAuth.js';
+import { v4 as uuidv4 } from 'uuid';
+import { authenticate } from '../middleware/auth.js';
+import { authorize } from '../middleware/roleAuth.js';
 import DailyLedger from '../models/DailyLedger.js';
 import Order from '../models/Order.js';
 import MenuItem from '../models/MenuItem.js';
+import Warehouse from '../models/Warehouse.js';
+import Inventory from '../models/Inventory.js';
 
 const router = express.Router();
+
+// SSE Clients Registry for Real-time Ledger Updates
+const ledgerClients = new Map();
+
+// @route   GET /api/ledger/stream
+// @desc    SSE endpoint for real-time daily ledger updates
+// @access  Public / Authenticated
+router.get('/stream', (req, res) => {
+  const clientId = uuidv4();
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  ledgerClients.set(clientId, res);
+
+  res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
+
+  req.on('close', () => {
+    ledgerClients.delete(clientId);
+  });
+});
+
+export const broadcastLedgerUpdate = (data) => {
+  const message = `data: ${JSON.stringify(data)}\n\n`;
+  ledgerClients.forEach((client) => {
+    try {
+      client.write(message);
+    } catch (error) {
+      console.error('Error sending ledger SSE message:', error);
+    }
+  });
+};
 
 // @route   GET /api/ledger/daily
 // @desc    Get all outlet ledgers for a specific date
@@ -157,6 +194,7 @@ router.post('/submit', authenticate, async (req, res) => {
     }
 
     await ledger.save();
+    broadcastLedgerUpdate({ type: 'ledger_submitted', outlet, date, ledger });
     res.json(ledger);
   } catch (err) {
     console.error('Error submitting ledger:', err.message);
@@ -165,11 +203,11 @@ router.post('/submit', authenticate, async (req, res) => {
 });
 
 // @route   POST /api/ledger/dispatch
-// @desc    Central Kitchen dispatches sentQty to an outlet ledger
+// @desc    Central Kitchen dispatches sentQty to an outlet ledger & auto-deducts warehouse inventory
 // @access  Owner, Management, Central Kitchen Manager
 router.post('/dispatch', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
-    const { date, outlet, items } = req.body;
+    const { date, outlet, items, sourceWarehouse } = req.body;
     if (!date || !outlet || !items) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -235,10 +273,200 @@ router.post('/dispatch', authenticate, authorize('Owner', 'Management', 'Central
     };
 
     await ledger.save();
-    res.json(ledger);
+
+    // 1. Auto-deduct from Central Kitchen Warehouse inventoryItems
+    let sourceWh = null;
+    if (sourceWarehouse) {
+      sourceWh = await Warehouse.findById(sourceWarehouse);
+    } else {
+      sourceWh = await Warehouse.findOne({ isCentralKitchen: true, linkedOutlets: outlet })
+              || await Warehouse.findOne({ isCentralKitchen: true });
+    }
+
+    if (sourceWh && Array.isArray(sourceWh.inventoryItems)) {
+      for (const dispatchItem of items) {
+        const menuItemDoc = await MenuItem.findById(dispatchItem.menuItem);
+        if (!menuItemDoc) continue;
+
+        const whItem = sourceWh.inventoryItems.find(wi => 
+          (wi.sku && menuItemDoc.sku && wi.sku === menuItemDoc.sku) ||
+          (wi.name && menuItemDoc.name && wi.name.toLowerCase() === menuItemDoc.name.toLowerCase())
+        );
+
+        if (whItem) {
+          whItem.quantity = Math.max(0, whItem.quantity - (dispatchItem.sentQty || 0));
+        }
+      }
+      await sourceWh.save();
+    }
+
+    // 2. Synchronize with Outlet Branch Inventory (Inventory collection)
+    for (const dispatchItem of items) {
+      const menuItemDoc = await MenuItem.findById(dispatchItem.menuItem);
+      if (!menuItemDoc) continue;
+
+      let branchItem = await Inventory.findOne({
+        branch: outlet,
+        $or: [
+          { name: menuItemDoc.name },
+          ...(menuItemDoc.sku ? [{ sku: menuItemDoc.sku }] : [])
+        ]
+      });
+
+      if (branchItem) {
+        branchItem.quantity += (dispatchItem.sentQty || 0);
+        branchItem.lastUpdated = new Date();
+        await branchItem.save();
+      }
+    }
+
+    // 3. Real-time broadcast to connected clients via SSE
+    broadcastLedgerUpdate({
+      type: 'stock_dispatched',
+      outlet,
+      date,
+      ledger,
+      sourceWarehouseId: sourceWh?._id || null
+    });
+
+    res.json({
+      ledger,
+      warehouseDeducted: !!sourceWh,
+      sourceWarehouse: sourceWh?.name || null
+    });
   } catch (err) {
     console.error('Error dispatching to ledger:', err.message);
     res.status(500).send('Server Error');
+  }
+});
+
+// R2: Morning Goods-Receipt Inspection (Accepted / Short / Damaged)
+router.post('/daily-dispatch/inspect', authenticate, authorize('Owner', 'Management', 'Outlet Sales Representative'), async (req, res) => {
+  try {
+    const { outlet, date, inspectedItems, managerName, comments } = req.body;
+    if (!outlet || !date || !Array.isArray(inspectedItems)) {
+      return res.status(400).json({ message: 'outlet, date, and inspectedItems array are required' });
+    }
+
+    let ledger = await DailyLedger.findOne({ date, outlet });
+    if (!ledger) {
+      ledger = new DailyLedger({ date, outlet, items: [], status: 'Draft' });
+    }
+
+    for (const insp of inspectedItems) {
+      const existing = ledger.items.find(
+        (li) => li.menuItem && li.menuItem.toString() === insp.itemId.toString()
+      );
+      if (existing) {
+        existing.wastageQty = (existing.wastageQty || 0) + (Number(insp.damagedQty) || 0);
+        existing.closingStock = Math.max(0, (Number(insp.acceptedQty) || 0) - (existing.soldQty || 0));
+      }
+
+      // Sync good stock with Inventory collection
+      if (insp.itemName) {
+        const inv = await Inventory.findOne({ branch: outlet, name: insp.itemName });
+        if (inv) {
+          inv.quantity = (inv.quantity || 0) + (Number(insp.acceptedQty) || 0);
+          inv.lastUpdated = new Date();
+          await inv.save();
+        }
+      }
+    }
+
+    ledger.receiptConfirmation = {
+      confirmedBy: managerName || req.user.name,
+      confirmedAt: new Date(),
+      comments: comments || '',
+      items: inspectedItems,
+    };
+    await ledger.save();
+
+    broadcastLedgerUpdate({ type: 'goods_receipt_confirmed', outlet, date, ledger });
+    res.json({ success: true, message: 'Morning goods receipt recorded', ledger });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// R5: Submit Daily Cash Settlement & Denomination Reconciliation
+router.post('/daily-settlement', authenticate, authorize('Owner', 'Management', 'Outlet Sales Representative'), async (req, res) => {
+  try {
+    const {
+      outlet,
+      date,
+      openingCash,
+      cashSales,
+      cashRefunds,
+      pettyCashExpenses,
+      countedPhysicalCash,
+      digitalPaymentsTotal,
+      manualCounterSalesTotal,
+      discrepancyNotes,
+      denominations,
+    } = req.body;
+
+    if (!outlet || !date) {
+      return res.status(400).json({ message: 'outlet and date are required' });
+    }
+
+    let ledger = await DailyLedger.findOne({ date, outlet });
+    if (!ledger) {
+      ledger = new DailyLedger({ date, outlet, items: [], status: 'Submitted' });
+    } else {
+      ledger.status = 'Submitted';
+    }
+
+    const expectedCash = (Number(openingCash) || 0) + (Number(cashSales) || 0) - (Number(cashRefunds) || 0) - (Number(pettyCashExpenses) || 0);
+    const variance = (Number(countedPhysicalCash) || 0) - expectedCash;
+
+    ledger.settlement = {
+      openingCash: Number(openingCash) || 0,
+      cashSales: Number(cashSales) || 0,
+      cashRefunds: Number(cashRefunds) || 0,
+      pettyCashExpenses: Number(pettyCashExpenses) || 0,
+      countedPhysicalCash: Number(countedPhysicalCash) || 0,
+      expectedCash,
+      variance,
+      digitalPaymentsTotal: Number(digitalPaymentsTotal) || 0,
+      manualCounterSalesTotal: Number(manualCounterSalesTotal) || 0,
+      discrepancyNotes: discrepancyNotes || '',
+      denominations: denominations || [],
+      submittedBy: req.user.name,
+      submittedAt: new Date(),
+      status: 'Submitted',
+    };
+
+    await ledger.save();
+    broadcastLedgerUpdate({ type: 'settlement_submitted', outlet, date, ledger });
+    res.json({ success: true, message: 'Daily settlement submitted', settlement: ledger.settlement, ledger });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// R5: Fetch Settlement History
+router.get('/settlements', authenticate, async (req, res) => {
+  try {
+    const { outlet } = req.query;
+    const query = { 'settlement.submittedAt': { $exists: true } };
+    if (outlet) query.outlet = outlet;
+
+    const ledgers = await DailyLedger.find(query)
+      .populate('outlet', 'name outletId')
+      .sort({ date: -1 })
+      .limit(30);
+
+    const settlements = ledgers.map((l) => ({
+      id: l._id,
+      outletId: l.outlet?.outletId || l.outlet?._id,
+      outletName: l.outlet?.name || '',
+      shiftDate: l.date,
+      ...l.settlement,
+    }));
+
+    res.json({ success: true, settlements });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

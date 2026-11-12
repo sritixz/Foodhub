@@ -58,12 +58,13 @@ const ensureManagementAccess = (targetUser, currentUser) => {
 // Get all users (protected - Owner/Management)
 router.get('/', authenticate, authorize('Owner', 'Management'), async (req, res) => {
   try {
-    const { role, status, outlet } = req.query;
+    const { role, status, outlet, customerType } = req.query;
     let query = {};
 
     if (role) query.role = role;
     if (status) query.status = status;
     if (outlet) query.outlet = outlet;
+    if (customerType) query.customerType = customerType;
 
     query = applyManagementScope(query, req.user);
 
@@ -74,6 +75,100 @@ router.get('/', authenticate, authorize('Owner', 'Management'), async (req, res)
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// R8: View-only Customer Wallet & Subscription Status Lookup for Retail Managers
+router.get('/lookup', authenticate, authorize('Owner', 'Management', 'Outlet Sales Representative'), async (req, res) => {
+  try {
+    const { query, kiosk } = req.query;
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({ message: 'Search query (phone, email, or name) must be at least 2 characters' });
+    }
+
+    const q = query.trim();
+    const customers = await User.find({
+      role: 'Customer',
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { phone: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+      ],
+    })
+      .select('name phone email customerType walletBalance availablePoints membership assignedCompany campus floor desk status')
+      .limit(10);
+
+    // Mask phone numbers for privacy compliance
+    const results = customers.map((c) => {
+      const phoneStr = c.phone || '';
+      const maskedPhone = phoneStr.length > 4 ? `******${phoneStr.slice(-4)}` : phoneStr;
+      return {
+        customerId: c._id,
+        name: c.name,
+        maskedPhone,
+        customerType: c.customerType || 'Corporate',
+        walletBalance: c.walletBalance || 0,
+        availablePoints: c.availablePoints || 0,
+        membership: c.membership || 'MOPY Member',
+        company: c.assignedCompany || 'Retail Walk-in',
+        deskLocation: [c.floor, c.desk].filter(Boolean).join(', ') || 'N/A',
+        status: c.status,
+      };
+    });
+
+    console.log(`[AUDIT R8 LOOKUP] Manager=${req.user._id} Kiosk=${kiosk || req.user.outlet} Query="${q}" Results=${results.length}`);
+
+    res.json({ success: true, results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Retail Customer Address Book: Add Address
+router.post('/addresses', authenticate, async (req, res) => {
+  try {
+    const { label, addressLine, landmark, city, postalCode, isDefault } = req.body;
+    if (!addressLine) {
+      return res.status(400).json({ message: 'addressLine is required' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.addressBook) user.addressBook = [];
+    if (isDefault) {
+      user.addressBook.forEach((a) => { a.isDefault = false; });
+    }
+
+    user.addressBook.push({
+      label: label || 'Home',
+      addressLine,
+      landmark: landmark || '',
+      city: city || 'Vadodara',
+      postalCode: postalCode || '',
+      isDefault: isDefault || user.addressBook.length === 0,
+    });
+
+    await user.save();
+    res.status(201).json({ success: true, addressBook: user.addressBook });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Retail Customer Address Book: Remove Address
+router.delete('/addresses/:addrId', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.addressBook = (user.addressBook || []).filter(
+      (a) => a._id.toString() !== req.params.addrId
+    );
+    await user.save();
+    res.json({ success: true, addressBook: user.addressBook });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

@@ -11,6 +11,26 @@ const variantSchema = new mongoose.Schema({
   },
 });
 
+const outletPricingSchema = new mongoose.Schema({
+  outlet: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Outlet',
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+  isAvailable: {
+    type: Boolean,
+    default: true,
+  },
+  customNotes: {
+    type: String,
+    default: '',
+  },
+});
+
 const menuItemSchema = new mongoose.Schema(
   {
     name: {
@@ -24,7 +44,6 @@ const menuItemSchema = new mongoose.Schema(
       required: true,
       validate: {
         validator: async function(value) {
-          // Check if the category exists in the database
           try {
             const category = await mongoose.model('Category').findById(value);
             return category !== null;
@@ -47,6 +66,38 @@ const menuItemSchema = new mongoose.Schema(
       type: String,
       enum: ['Veg', 'Non-Veg', 'Egg', 'Jain'],
       required: true,
+    },
+    calories: {
+      type: Number,
+      default: 0,
+    },
+    protein: {
+      type: Number,
+      default: 0,
+    },
+    carbs: {
+      type: Number,
+      default: 0,
+    },
+    fat: {
+      type: Number,
+      default: 0,
+    },
+    isHealth: {
+      type: Boolean,
+      default: false,
+    },
+    healthTag: {
+      type: String,
+      default: null,
+    },
+    prepTime: {
+      type: String,
+      default: '12-15 mins',
+    },
+    rating: {
+      type: Number,
+      default: 4.8,
     },
     status: {
       type: String,
@@ -110,6 +161,8 @@ const menuItemSchema = new mongoose.Schema(
         ref: 'Outlet',
       },
     ],
+    // Per-outlet custom pricing & availability overrides
+    outletPricing: [outletPricingSchema],
   },
   {
     timestamps: true,

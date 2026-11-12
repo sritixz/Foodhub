@@ -14,17 +14,26 @@ const generateToken = (userId) => {
   });
 };
 
-// Login
+// Login (supports Email or Phone)
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
+      return res.status(400).json({ message: 'Please provide email or phone and password' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email }).populate('outlet', 'name outletId');
+    const cleanId = String(email).trim().toLowerCase();
+    const phoneDigits = cleanId.replace(/\D/g, '');
+
+    // Find user by email OR phone
+    const user = await User.findOne({
+      $or: [
+        { email: cleanId },
+        { phone: cleanId },
+        ...(phoneDigits.length >= 10 ? [{ phone: phoneDigits }, { phone: phoneDigits.slice(-10) }] : []),
+      ],
+    }).populate('outlet', 'name outletId');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -64,9 +73,10 @@ router.post('/login', async (req, res) => {
 // Register (customer facing and admin)
 router.post('/register', async (req, res) => {
   try {
-    let { name, email, phone, password, role, outlet, companyName, companyCategory, assignedCompany, campus, floor, desk } = req.body;
+    let { name, email, phone, password, role, outlet, companyName, companyCategory, assignedCompany, campus, floor, desk, customerType, addressBook } = req.body;
 
     role = role || 'Customer';
+    const resolvedCustomerType = (customerType && String(customerType).toLowerCase() === 'retail') ? 'Retail' : 'Corporate';
     phone = (phone && String(phone).trim().length > 0) ? String(phone).trim() : '+91 98765 43210';
 
     if (!name || !email || !password) {
@@ -85,7 +95,7 @@ router.post('/register', async (req, res) => {
 
     // Resolve outlet if string outletId or company name passed
     let outletId = null;
-    let matchedCompanyCategory = companyCategory || 'Corporate Client';
+    let matchedCompanyCategory = companyCategory || (resolvedCustomerType === 'Retail' ? 'Commercial/Office Complex' : 'Corporate Client');
     let matchedAssignedCompany = assignedCompany || companyName || null;
 
     if (outlet || assignedCompany) {
@@ -117,10 +127,15 @@ router.post('/register', async (req, res) => {
       phone,
       password: hashedPassword,
       role,
+      customerType: resolvedCustomerType,
       organization: matchedAssignedCompany || companyName || (outlet ? String(outlet).toUpperCase() : 'MOPY Customer'),
       companyCategory: matchedCompanyCategory,
       assignedCompany: matchedAssignedCompany,
       outlet: outletId,
+      campus: campus || null,
+      floor: floor || null,
+      desk: desk || null,
+      addressBook: Array.isArray(addressBook) ? addressBook : [],
       defaultDeliveryLocation: [floor, desk].filter(Boolean).join(' • ') || null,
       status: 'Active',
     });

@@ -76,7 +76,7 @@ router.get('/tasks/active', authenticate, async (req, res) => {
 });
 
 // 3. Accept Task Assignment (Stops auto-reassign timeout)
-router.patch('/tasks/:id/accept', authenticate, async (req, res) => {
+const handleAcceptTask = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -106,10 +106,12 @@ router.patch('/tasks/:id/accept', authenticate, async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+};
+router.patch('/tasks/:id/accept', authenticate, handleAcceptTask);
+router.post('/tasks/:id/accept', authenticate, handleAcceptTask);
 
 // 4. Reject Task Assignment (Triggers auto-reassign)
-router.patch('/tasks/:id/reject', authenticate, async (req, res) => {
+const handleRejectTask = async (req, res) => {
   try {
     const { reason = 'Runner overloaded' } = req.body;
     const order = await Order.findById(req.params.id);
@@ -142,10 +144,12 @@ router.patch('/tasks/:id/reject', authenticate, async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+};
+router.patch('/tasks/:id/reject', authenticate, handleRejectTask);
+router.post('/tasks/:id/reject', authenticate, handleRejectTask);
 
 // 5. Confirm Kiosk Counter Pickup Checklist
-router.patch('/tasks/:id/pickup', authenticate, async (req, res) => {
+const handlePickupTask = async (req, res) => {
   try {
     const { checklist } = req.body;
     const order = await Order.findById(req.params.id);
@@ -175,7 +179,9 @@ router.patch('/tasks/:id/pickup', authenticate, async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+};
+router.patch('/tasks/:id/pickup', authenticate, handlePickupTask);
+router.post('/tasks/:id/pickup', authenticate, handlePickupTask);
 
 // 6. Create Multi-Order Batch Run
 router.post('/tasks/batch', authenticate, async (req, res) => {
@@ -210,7 +216,7 @@ router.post('/tasks/batch', authenticate, async (req, res) => {
 });
 
 // 7. Update Task Status (En Route, Arrived, Delivered)
-router.patch('/tasks/:id/status', authenticate, async (req, res) => {
+const handleStatusUpdate = async (req, res) => {
   try {
     const { status, note } = req.body;
     const order = await Order.findById(req.params.id);
@@ -236,7 +242,9 @@ router.patch('/tasks/:id/status', authenticate, async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-});
+};
+router.patch('/tasks/:id/status', authenticate, handleStatusUpdate);
+router.put('/tasks/:id/status', authenticate, handleStatusUpdate);
 
 // 8. Submit Proof of Delivery (PoD)
 router.post('/tasks/:id/proof', authenticate, async (req, res) => {

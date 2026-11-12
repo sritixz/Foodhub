@@ -10,12 +10,9 @@ const router = express.Router();
 // Category validation middleware
 async function validateCategory(req, res, next) {
   if (req.body.category) {
-    // Check if category ID is valid ObjectId format
     if (!mongoose.Types.ObjectId.isValid(req.body.category)) {
       return res.status(400).json({ message: 'Invalid category ID format' });
     }
-    
-    // Query Category collection to ensure category exists
     try {
       const category = await Category.findById(req.body.category);
       if (!category) {
@@ -28,7 +25,7 @@ async function validateCategory(req, res, next) {
   next();
 }
 
-// Get all menu items
+// Get all menu items (with outlet filter, search, category, and custom pricing resolution)
 router.get('/', async (req, res) => {
   try {
     const { vendor, category, status, outlet, foodType, q, minPrice, maxPrice } = req.query;
@@ -46,6 +43,7 @@ router.get('/', async (req, res) => {
           { vendor: outlet },
           { outlets: outlet },
           { applyToAll: true },
+          { 'outletPricing.outlet': outlet },
         ],
       };
       query.$and = query.$and || [];
@@ -69,17 +67,46 @@ router.get('/', async (req, res) => {
     }
 
     const menuItems = await MenuItem.find(query)
-      .populate('vendor', 'name outletId')
-      .populate('outlets', 'name outletId')
+      .populate('vendor', 'name outletId category')
+      .populate('outlets', 'name outletId category')
       .populate('category', 'name description')
+      .populate('outletPricing.outlet', 'name outletId category')
       .sort({ createdAt: -1 });
+
+    // If a specific outlet is requested, resolve effective price & custom status
+    if (outlet) {
+      const resolved = menuItems.map((item) => {
+        const itemObj = item.toObject();
+        const outletOverride = item.outletPricing?.find(
+          (op) => op.outlet && (op.outlet._id?.toString() === outlet || op.outlet.toString() === outlet)
+        );
+
+        if (outletOverride) {
+          itemObj.effectivePrice = outletOverride.price;
+          itemObj.customOutletPrice = outletOverride.price;
+          itemObj.hasCustomPrice = outletOverride.price !== item.basePrice;
+          itemObj.outletAvailable = outletOverride.isAvailable;
+          itemObj.customNotes = outletOverride.customNotes || '';
+        } else {
+          itemObj.effectivePrice = item.basePrice;
+          itemObj.customOutletPrice = null;
+          itemObj.hasCustomPrice = false;
+          itemObj.outletAvailable = item.status === 'Available';
+          itemObj.customNotes = '';
+        }
+
+        return itemObj;
+      });
+      return res.json(resolved);
+    }
+
     res.json(menuItems);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Get menu items by outlet (for QR code scanning) — filters by status and active time slots
+// Get menu items by outlet (for QR code scanning and kiosk apps)
 router.get('/outlet/:outletId', async (req, res) => {
   try {
     const { outletId } = req.params;
@@ -88,26 +115,33 @@ router.get('/outlet/:outletId', async (req, res) => {
         { vendor: outletId },
         { outlets: outletId },
         { applyToAll: true },
+        { 'outletPricing.outlet': outletId },
       ],
       status: 'Available',
     })
       .populate('vendor', 'name outletId')
       .populate('category', 'name description')
+      .populate('outletPricing.outlet', 'name outletId')
       .sort({ category: 1, name: 1 });
 
-    // Filter by time slots and days for Custom Time Slots items
     const now = new Date();
     const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const todayLabel = dayMap[now.getDay()];
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const filtered = menuItems.filter((item) => {
+      // Check if explicitly disabled at this outlet
+      const outletOverride = item.outletPricing?.find(
+        (op) => op.outlet && (op.outlet._id?.toString() === outletId || op.outlet.toString() === outletId)
+      );
+      if (outletOverride && outletOverride.isAvailable === false) {
+        return false;
+      }
+
       if (item.availabilityType !== 'Custom Time Slots') return true;
 
-      // Check day restriction
       if (item.days?.length > 0 && !item.days.includes(todayLabel)) return false;
 
-      // Check time slots — item is available if NOW falls within ANY slot
       if (item.timeSlots?.length > 0) {
         return item.timeSlots.some((slot) => {
           if (!slot.start || !slot.end) return true;
@@ -119,6 +153,19 @@ router.get('/outlet/:outletId', async (req, res) => {
         });
       }
       return true;
+    }).map((item) => {
+      const itemObj = item.toObject();
+      const outletOverride = item.outletPricing?.find(
+        (op) => op.outlet && (op.outlet._id?.toString() === outletId || op.outlet.toString() === outletId)
+      );
+      if (outletOverride) {
+        itemObj.effectivePrice = outletOverride.price;
+        itemObj.basePrice = outletOverride.price;
+        itemObj.hasCustomPrice = outletOverride.price !== item.basePrice;
+      } else {
+        itemObj.effectivePrice = item.basePrice;
+      }
+      return itemObj;
     });
 
     res.json(filtered);
@@ -132,8 +179,9 @@ router.get('/:id', async (req, res) => {
   try {
     const menuItem = await MenuItem.findById(req.params.id)
       .populate('vendor', 'name outletId')
-      .populate('outlets', 'name outletId')
-      .populate('category', 'name description');
+      .populate('outlets', 'name outletId category')
+      .populate('category', 'name description')
+      .populate('outletPricing.outlet', 'name outletId category');
     if (!menuItem) {
       return res.status(404).json({ message: 'Menu item not found' });
     }
@@ -154,7 +202,7 @@ router.post('/', authenticate, authorize('Outlet Sales Representative', 'Owner',
   }
 });
 
-// PATCH status toggle (Available / Paused) — quick toggle without full update
+// PATCH quick status toggle (Available / Paused)
 router.patch('/:id/status', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), async (req, res) => {
   try {
     const { status } = req.body;
@@ -170,6 +218,59 @@ router.patch('/:id/status', authenticate, authorize('Outlet Sales Representative
       return res.status(404).json({ message: 'Menu item not found' });
     }
     res.json(menuItem);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PATCH quick outlet pricing & availability update (Fast inline edit from menu browse screen)
+router.patch('/:id/outlet-pricing', authenticate, authorize('Outlet Sales Representative', 'Owner', 'Management'), async (req, res) => {
+  try {
+    const { outletId, price, isAvailable, customNotes } = req.body;
+    if (!outletId) {
+      return res.status(400).json({ message: 'outletId is required' });
+    }
+
+    const menuItem = await MenuItem.findById(req.params.id);
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    if (!menuItem.outletPricing) {
+      menuItem.outletPricing = [];
+    }
+
+    const existingIndex = menuItem.outletPricing.findIndex(
+      (op) => op.outlet && op.outlet.toString() === outletId.toString()
+    );
+
+    if (existingIndex > -1) {
+      if (price !== undefined && price !== null && price !== '') {
+        menuItem.outletPricing[existingIndex].price = Number(price);
+      }
+      if (isAvailable !== undefined) {
+        menuItem.outletPricing[existingIndex].isAvailable = Boolean(isAvailable);
+      }
+      if (customNotes !== undefined) {
+        menuItem.outletPricing[existingIndex].customNotes = customNotes;
+      }
+    } else {
+      menuItem.outletPricing.push({
+        outlet: outletId,
+        price: (price !== undefined && price !== null && price !== '') ? Number(price) : menuItem.basePrice,
+        isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true,
+        customNotes: customNotes || '',
+      });
+    }
+
+    await menuItem.save();
+    const populated = await MenuItem.findById(menuItem._id)
+      .populate('vendor', 'name outletId')
+      .populate('outlets', 'name outletId category')
+      .populate('category', 'name description')
+      .populate('outletPricing.outlet', 'name outletId category');
+
+    res.json({ success: true, menuItem: populated });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

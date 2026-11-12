@@ -26,6 +26,10 @@ import dailyMenuRoutes from './routes/dailyMenu.js';
 import investorRoutes from './routes/investors.js';
 import makerCheckerRoutes from './routes/makerCheckerRoutes.js';
 import deliveryRoutes from './routes/delivery.js';
+import recipeRoutes from './routes/recipes.js';
+import menuRoutes from './routes/menu.js';
+import walletRoutes from './routes/wallet.js';
+import promotionRoutes from './routes/promotions.js';
 import { seedOfficialOutlets } from './scripts/seedOutlets.js';
 
 // Load environment variables
@@ -50,6 +54,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'online', app: 'MOPY Unified Operations API', version: '2.0.0', timestamp: new Date() });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/outlets', outletRoutes);
 app.use('/api/menu-items', menuItemRoutes);
@@ -66,13 +73,16 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/wallet', paymentRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/menu', menuRoutes);
+app.use('/api/promotions', promotionRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/ledger', ledgerRoutes);
 app.use('/api/daily-menu', dailyMenuRoutes);
 app.use('/api/investors', investorRoutes);
 app.use('/api/maker-checker', makerCheckerRoutes);
 app.use('/api/delivery', deliveryRoutes);
+app.use('/api/recipes', recipeRoutes);
 // QR Code public endpoint (for scanning)
 app.get('/qr/:qrData', async (req, res) => {
   try {
