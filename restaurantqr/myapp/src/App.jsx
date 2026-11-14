@@ -37,6 +37,9 @@ import InvestorDashboard from './pages/InvestorDashboard';
 import InvestorPayouts from './pages/InvestorPayouts';
 import AdminInvestorLedger from './pages/admin/AdminInvestorLedger';
 import MakerCheckerApprovals from './pages/admin/MakerCheckerApprovals';
+import RecipeCosting from './pages/RecipeCosting';
+import RecipeStudio from './pages/RecipeStudio';
+import ProductionBatchManager from './pages/ProductionBatchManager';
 
 const App = () => {
   return (
@@ -248,6 +251,30 @@ const App = () => {
           element={
             <ProtectedRoute allowedRoles={['Owner', 'Management', 'Outlet Sales Representative']}>
               <DailyMenuSetup />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipe-costing"
+          element={
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager', 'Outlet Sales Representative']}>
+              <RecipeCosting />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recipe-studio"
+          element={
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager']}>
+              <RecipeStudio />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/production-batches"
+          element={
+            <ProtectedRoute allowedRoles={['Owner', 'Management', 'Central Kitchen Manager']}>
+              <ProductionBatchManager />
             </ProtectedRoute>
           }
         />

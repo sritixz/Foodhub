@@ -11,6 +11,14 @@ const CentralKitchenDispatch = () => {
   const [outlets, setOutlets] = useState([]);
   const [selectedOutlet, setSelectedOutlet] = useState('');
   const [items, setItems] = useState([]);
+  const [availableBatches, setAvailableBatches] = useState([]);
+  const [recentDispatches, setRecentDispatches] = useState([]);
+
+  // Transit logistics fields
+  const [runnerName, setRunnerName] = useState('Ramesh K (Van Express)');
+  const [vehicleNumber, setVehicleNumber] = useState('MH-02-CW-9912');
+  const [temperatureAtDeparture, setTemperatureAtDeparture] = useState('4.2');
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -20,6 +28,7 @@ const CentralKitchenDispatch = () => {
 
   useEffect(() => {
     fetchOutlets();
+    fetchRecentDispatches();
   }, []);
 
   const fetchOutlets = async () => {
@@ -31,6 +40,13 @@ const CentralKitchenDispatch = () => {
       console.error(err);
       setError('Failed to fetch outlets.');
     }
+  };
+
+  const fetchRecentDispatches = async () => {
+    try {
+      const res = await api.get('/dispatch/orders');
+      setRecentDispatches(res.data || []);
+    } catch (_) {}
   };
 
   useEffect(() => {
@@ -45,95 +61,85 @@ const CentralKitchenDispatch = () => {
     setSuccess('');
     setWarning('');
     try {
-      // Fetch daily menu for this outlet
-      const dailyMenuRes = await api.get(`/daily-menu?date=${date}&outletId=${selectedOutlet}`);
-      let outletMenu = [];
-      
-      if (dailyMenuRes.data && dailyMenuRes.data.meals) {
-         const meals = dailyMenuRes.data.meals;
-         const allItems = [...(meals.breakfast || []), ...(meals.lunch || []), ...(meals.fullMeal || []), ...(meals.snack || [])];
-         const uniqueMap = new Map();
-         allItems.forEach(i => {
-           if(i) uniqueMap.set(i._id, i);
-         });
-         outletMenu = Array.from(uniqueMap.values());
-      } else {
-         // Fallback to full catalog if daily menu isn't configured yet
-         const menuRes = await api.get('/menu-items');
-         outletMenu = menuRes.data.filter(
-           item => item.vendor?._id === selectedOutlet || item.outlets?.some(o => o._id === selectedOutlet) || item.applyToAll
-         );
-      }
+      const [menuRes, batchRes] = await Promise.all([
+        api.get('/menu-items').catch(() => ({ data: [] })),
+        api.get('/production/batches?status=Completed').catch(() => ({ data: [] })),
+      ]);
 
-      const getMealCategoryOfItem = (menuItemId, catalogCategory) => {
-        if (dailyMenuRes.data && dailyMenuRes.data.meals) {
-          const meals = dailyMenuRes.data.meals;
-          const assigned = [];
-          const matchId = (ref) => {
-            const refId = ref && ref._id ? ref._id.toString() : (ref ? ref.toString() : '');
-            return refId === menuItemId?.toString();
-          };
-          if (meals.breakfast?.some(matchId)) assigned.push('Breakfast');
-          if (meals.lunch?.some(matchId)) assigned.push('Lunch');
-          if (meals.fullMeal?.some(matchId)) assigned.push('Full Meal');
-          if (meals.snack?.some(matchId)) assigned.push('Snack');
-          if (assigned.length > 0) return assigned.join(', ');
-        }
+      setAvailableBatches(batchRes.data || []);
 
-        // Fallback mapping: convert any catalog category to daily menu slot
-        const cat = (catalogCategory || '').toLowerCase();
-        if (cat.includes('breakfast')) return 'Breakfast';
-        if (cat.includes('lunch')) return 'Lunch';
-        if (cat.includes('full') || cat.includes('meal') || cat.includes('course') || cat.includes('main')) return 'Lunch';
-        if (cat.includes('snack') || cat.includes('dessert') || cat.includes('sweet') || cat.includes('beverage') || cat.includes('tea') || cat.includes('appetiz') || cat.includes('light')) return 'Snack';
-        return 'Snack';
-      };
+      // Filter catalog for this outlet
+      const outletMenu = (menuRes.data || []).filter(
+        (item) =>
+          item.vendor?._id === selectedOutlet ||
+          item.outlets?.some((o) => o._id === selectedOutlet) ||
+          item.applyToAll
+      );
 
-      const initialItems = outletMenu.map(menuItem => ({
-        menuItem: menuItem._id,
-        name: menuItem.name,
-        category: getMealCategoryOfItem(menuItem._id, menuItem.category?.name),
-        costPrice: menuItem.costPrice || 0,
-        sellingPrice: menuItem.basePrice || 0,
-        sentQty: '',
-      }));
+      // Auto-extract outlet transfer cost price if set
+      const initialItems = outletMenu.map((menuItem) => {
+        const outletRule = (menuItem.outletPricing || []).find(
+          (op) => op.outlet?.toString() === selectedOutlet.toString()
+        );
+        const unitCostPrice = outletRule?.costPrice || menuItem.costPrice || 0;
 
-      // Check if ledger already has sentQty
+        // Auto-match an available staged batch
+        const matchedBatch = (batchRes.data || []).find(
+          (b) =>
+            b.menuItem?._id?.toString() === menuItem._id?.toString() &&
+            b.remainingStagedQty > 0
+        );
+
+        return {
+          menuItem: menuItem._id,
+          name: menuItem.name,
+          category: menuItem.category?.name || 'General',
+          costPrice: unitCostPrice,
+          sellingPrice: menuItem.basePrice || 0,
+          batchId: matchedBatch?._id || '',
+          batchNumber: matchedBatch?.batchNumber || '',
+          stagedAvailable: matchedBatch?.remainingStagedQty || 0,
+          sentQty: '',
+        };
+      });
+
+      // Check if dispatch order exists for today
       try {
-        const ledgerRes = await api.get(`/ledger/outlet?date=${date}&outletId=${selectedOutlet}`);
-        if (ledgerRes.data) {
-          const savedItems = ledgerRes.data.items;
-          const mergedItems = initialItems.map(initItem => {
-            const saved = savedItems.find(s => s.menuItem?._id === initItem.menuItem);
+        const existingOrder = await api.get(`/dispatch/orders?date=${date}&outletId=${selectedOutlet}`);
+        if (existingOrder.data && existingOrder.data.length > 0) {
+          const latest = existingOrder.data[0];
+          const merged = initialItems.map((init) => {
+            const saved = (latest.items || []).find(
+              (s) => s.menuItem?._id?.toString() === init.menuItem?.toString()
+            );
             if (saved) {
               return {
-                ...initItem,
-                costPrice: saved.costPrice !== undefined ? saved.costPrice : initItem.costPrice,
-                sellingPrice: saved.sellingPrice !== undefined ? saved.sellingPrice : initItem.sellingPrice,
-                sentQty: saved.sentQty
+                ...init,
+                sentQty: saved.dispatchedQty || '',
+                batchNumber: saved.batchNumber || init.batchNumber,
+                costPrice: saved.unitCostPrice || init.costPrice,
               };
             }
-            return initItem;
+            return init;
           });
-          setItems(mergedItems);
-          if(ledgerRes.data.status === 'Approved'){
-             setError('This ledger has been approved and cannot be edited.');
-          }
+          setItems(merged);
+        } else {
+          setItems(initialItems);
         }
-      } catch (err) {
+      } catch (_) {
         setItems(initialItems);
       }
     } catch (err) {
       console.error(err);
-      setError('Failed to load data.');
+      setError('Failed to load catalog and batch data.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleItemChange = (index, value) => {
+  const handleItemChange = (index, field, value) => {
     const updated = [...items];
-    updated[index].sentQty = value;
+    updated[index][field] = value;
     setItems(updated);
   };
 
@@ -144,158 +150,288 @@ const CentralKitchenDispatch = () => {
     setSuccess('');
 
     try {
-      const payloadItems = items.filter(item => item.sentQty !== '' && Number(item.sentQty) > 0).map(item => ({
-        menuItem: item.menuItem,
-        sentQty: Number(item.sentQty),
-        costPrice: item.costPrice,
-        sellingPrice: item.sellingPrice
-      }));
+      const payloadItems = items
+        .filter((item) => item.sentQty !== '' && Number(item.sentQty) > 0)
+        .map((item) => ({
+          menuItem: item.menuItem,
+          productionBatch: item.batchId || undefined,
+          batchNumber: item.batchNumber || undefined,
+          dispatchedQty: Number(item.sentQty),
+          unitCostPrice: Number(item.costPrice),
+        }));
 
-      if(payloadItems.length === 0){
-          setError('Please enter sent quantity for at least one item.');
-          setSaving(false);
-          return;
+      if (payloadItems.length === 0) {
+        setError('Please enter dispatched quantity for at least one item.');
+        setSaving(false);
+        return;
       }
 
-      await api.post('/ledger/dispatch', { date, outlet: selectedOutlet, items: payloadItems });
-      setSuccess('Dispatch quantities successfully saved to ledger!');
+      const res = await api.post('/dispatch/orders', {
+        dispatchDate: date,
+        targetOutlet: selectedOutlet,
+        items: payloadItems,
+        runnerName,
+        vehicleNumber,
+        temperatureAtDeparture: Number(temperatureAtDeparture) || null,
+      });
+
+      setSuccess(res.data?.message || 'Dispatch manifest successfully transmitted to outlet!');
+      fetchRecentDispatches();
     } catch (err) {
       console.error(err);
-      setError('Failed to save dispatch. ' + (err.response?.data?.message || err.message));
+      setError('Failed to transmit dispatch. ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDownloadTemplate = () => {
-    const csvContent = "Item Name,Sent Qty\n";
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Dispatch_Template.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setError('');
-    setSuccess('');
-    setWarning('');
-
-    try {
-      const result = await parseImportFile(file, items);
-      if (result.items) {
-        setItems(result.items);
-      }
-      setSuccess(`Successfully imported data from file (${result.matchCount} items matched).`);
-      if (result.unmatched && result.unmatched.length > 0) {
-        setWarning(`Warning: The following items from the file did not match any catalog items: ${result.unmatched.join(', ')}`);
-      }
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    } catch (err) {
-      setError('Error parsing file: ' + err.message);
-    }
-  };
+  const totalDispatchedUnits = items.reduce(
+    (sum, i) => sum + (Number(i.sentQty) || 0),
+    0
+  );
+  const totalTransferValue = items.reduce(
+    (sum, i) => sum + (Number(i.sentQty) || 0) * (Number(i.costPrice) || 0),
+    0
+  );
 
   return (
-    <Layout>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Central Kitchen Dispatch</h1>
-          <p className="text-gray-600">Log the sent quantity for each outlet to lock their EOD inventory.</p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={handleDownloadTemplate}>
-            Download Template
-          </Button>
-          <input 
-            type="file" 
-            accept=".csv,.xlsx,.xls" 
-            ref={fileInputRef}
-            onChange={handleFileUpload} 
-            className="hidden" 
-          />
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            Import CSV/Excel
-          </Button>
-        </div>
-      </div>
-
-      <Card className="mb-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          <Input
-            type="date"
-            label="Date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-          <div className="w-64">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Target Outlet</label>
-            <select
-              value={selectedOutlet}
-              onChange={(e) => setSelectedOutlet(e.target.value)}
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-            >
-              {outlets.map(o => (
-                <option key={o._id} value={o._id}>{o.name}</option>
-              ))}
-            </select>
+    <Layout
+      headerProps={{
+        title: 'Central Kitchen Dispatch Hub & Logistics',
+        subtitle: 'Issue digital Gate Passes and dispatch prepared batches to spoke kiosks',
+      }}
+    >
+      <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+        {/* Alerts */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-4 rounded-xl flex items-center gap-3 shadow-sm">
+            <span className="material-icons-outlined text-red-500">error</span>
+            <span>{error}</span>
           </div>
-          <Button onClick={fetchData} loading={loading}>Load Menu</Button>
-        </div>
-      </Card>
+        )}
 
-      {error && <div className="p-4 mb-4 text-red-700 bg-red-100 rounded-lg">{error}</div>}
-      {success && <div className="p-4 mb-4 text-green-700 bg-green-100 rounded-lg">{success}</div>}
-      {warning && <div className="p-4 mb-4 text-amber-800 bg-amber-50 border border-amber-200 rounded-lg">{warning}</div>}
+        {success && (
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl flex items-center gap-3 shadow-sm">
+            <span className="material-icons-outlined text-emerald-500">check_circle</span>
+            <span>{success}</span>
+          </div>
+        )}
 
-      {!loading && items.length > 0 && (
-        <form onSubmit={handleSubmit}>
-          <Card className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Dispatch Items</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b">
-                    <th className="p-3 font-medium text-gray-600">Item Name</th>
-                    <th className="p-3 font-medium text-gray-600">Category</th>
-                    <th className="p-3 font-medium text-gray-600">CP (₹)</th>
-                    <th className="p-3 font-medium text-gray-600 text-center">Dispatch Qty (Sent)</th>
+        {/* Top Control Bar: Destination & Departure Details */}
+        <Card className="p-6">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="material-icons-outlined text-primary">local_shipping</span>
+            Dispatch Gate Pass Parameters
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                Dispatch Date
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                Destination Spoke Outlet
+              </label>
+              <select
+                value={selectedOutlet}
+                onChange={(e) => setSelectedOutlet(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold focus:outline-none"
+              >
+                {outlets.map((o) => (
+                  <option key={o._id} value={o._id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Input
+                label="Assigned Runner / Van Driver"
+                value={runnerName}
+                onChange={(e) => setRunnerName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="Vehicle #"
+                  value={vehicleNumber}
+                  onChange={(e) => setVehicleNumber(e.target.value)}
+                />
+                <Input
+                  label="Departure Temp (°C)"
+                  value={temperatureAtDeparture}
+                  onChange={(e) => setTemperatureAtDeparture(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Dispatch Quantities Manifest Table */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="material-icons-outlined text-primary">fact_check</span>
+                Dispatch Manifest & Batch Allocation
+              </h2>
+              <p className="text-xs text-slate-500">
+                Allocate quantities from staged production runs. Outlet cost prices are pulled from Central Recipe Studio.
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-slate-500 uppercase font-semibold">Total Transfer Value: </span>
+              <span className="text-lg font-black text-primary ml-1">Rs {totalTransferValue.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-xs text-slate-500 uppercase">
+                  <th className="pb-3">Menu Dish</th>
+                  <th className="pb-3">Batch ID / Staged Stock</th>
+                  <th className="pb-3 w-32">Outlet Cost (Rs)</th>
+                  <th className="pb-3 w-32">Dispatched Qty</th>
+                  <th className="pb-3 w-36">Total Transferred</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-6 text-center text-slate-400 italic">
+                      No menu items found for this outlet.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, index) => (
-                    <tr key={item.menuItem} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-900">{item.name}</td>
-                      <td className="p-3 text-gray-500 text-sm">{item.category}</td>
-                      <td className="p-3 text-gray-600">{item.costPrice}</td>
-                      <td className="p-3 text-center">
+                ) : (
+                  items.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                      <td className="py-3 font-semibold text-slate-800 dark:text-slate-100">
+                        {item.name}
+                        <span className="block text-[11px] text-slate-400 font-normal">{item.category}</span>
+                      </td>
+                      <td className="py-3">
+                        {item.batchNumber ? (
+                          <span className="font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded font-semibold">
+                            {item.batchNumber} (Avail: {item.stagedAvailable})
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">Ad-hoc batch</span>
+                        )}
+                      </td>
+                      <td className="py-3 font-bold text-slate-700 dark:text-slate-300">
+                        Rs {item.costPrice}
+                      </td>
+                      <td className="py-3 pr-2">
                         <input
                           type="number"
                           min="0"
                           value={item.sentQty}
-                          onChange={(e) => handleItemChange(index, e.target.value)}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-primary"
+                          onChange={(e) => handleItemChange(idx, 'sentQty', e.target.value)}
                           placeholder="0"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                       </td>
+                      <td className="py-3 font-black text-slate-900 dark:text-white">
+                        Rs {((Number(item.sentQty) || 0) * (Number(item.costPrice) || 0)).toFixed(2)}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-          <div className="flex justify-end">
-            <Button type="submit" loading={saving} size="lg">Confirm Dispatch</Button>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </form>
-      )}
+
+          <div className="pt-6 border-t border-slate-200 dark:border-slate-700 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-slate-500">
+              Total Units to Dispatch: <strong className="text-slate-900 dark:text-white">{totalDispatchedUnits} Units</strong>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={saving || totalDispatchedUnits === 0}
+              className="w-full sm:w-auto font-bold px-6 py-2.5 shadow-md flex items-center justify-center gap-2"
+            >
+              <span className="material-icons-outlined text-base">send</span>
+              {saving ? 'Transmitting...' : 'Confirm Dispatch & Transmit to Outlet'}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Section: Recent Central Dispatches History */}
+        <Card className="p-6">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="material-icons-outlined text-primary">history</span>
+            Recent Central Dispatch Manifests
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-xs text-slate-500 uppercase">
+                  <th className="pb-3">Manifest #</th>
+                  <th className="pb-3">Date</th>
+                  <th className="pb-3">Destination Kiosk</th>
+                  <th className="pb-3">Runner / Vehicle</th>
+                  <th className="pb-3">Units</th>
+                  <th className="pb-3">Value</th>
+                  <th className="pb-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                {recentDispatches.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="py-6 text-center text-slate-400 italic">
+                      No dispatch orders recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  recentDispatches.map((ord) => (
+                    <tr key={ord._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                      <td className="py-3 font-mono font-bold text-primary">{ord.dispatchNumber}</td>
+                      <td className="py-3">{ord.dispatchDate}</td>
+                      <td className="py-3 font-semibold text-slate-800 dark:text-slate-100">
+                        {ord.targetOutlet?.name || 'Kiosk'}
+                      </td>
+                      <td className="py-3 text-slate-500">
+                        {ord.runnerName} ({ord.vehicleNumber || 'Van'})
+                      </td>
+                      <td className="py-3 font-bold">{ord.totalDispatchedUnits} Units</td>
+                      <td className="py-3 font-semibold">Rs {ord.totalTransferValue}</td>
+                      <td className="py-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ord.transitStatus === 'Reconciled'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                              : ord.transitStatus === 'Delivered'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          }`}
+                        >
+                          {ord.transitStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
     </Layout>
   );
 };
