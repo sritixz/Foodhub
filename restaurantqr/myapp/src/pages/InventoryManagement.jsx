@@ -15,9 +15,92 @@ const InventoryManagement = () => {
   const [activeTab, setActiveTab] = useState('current');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [incomingDispatches, setIncomingDispatches] = useState([]);
+  const [activeGRNOrder, setActiveGRNOrder] = useState(null);
+  const [grnItems, setGrnItems] = useState([]);
+  const [grnNotes, setGrnNotes] = useState('');
+  const [grnSaving, setGrnSaving] = useState(false);
+  const [grnSuccess, setGrnSuccess] = useState('');
 
   useEffect(() => {
     fetchInventory();
+    fetchDispatches();
+  }, [selectedOutlet]);
+
+  const fetchDispatches = async () => {
+    try {
+      const endpoint = selectedOutlet !== 'All Outlets' ? `/dispatch/orders?outletId=${selectedOutlet}` : '/dispatch/orders';
+      const res = await api.get(endpoint);
+      setIncomingDispatches(res.data || []);
+    } catch (_) {}
+  };
+
+  const handleStartGRN = (order) => {
+    setActiveGRNOrder(order);
+    const initialItems = (order.items || []).map((it) => ({
+      menuItemId: it.menuItem?._id || it.menuItem,
+      dishName: it.dishName || it.menuItem?.name || 'Dish',
+      dispatchedQty: it.dispatchedQty || 0,
+      acceptedQty: it.dispatchedQty || 0,
+      damagedQty: 0,
+      discrepancyReason: '',
+      unitCostPrice: it.unitCostPrice || 0,
+    }));
+    setGrnItems(initialItems);
+    setGrnNotes('');
+    setGrnSuccess('');
+  };
+
+  const handleUpdateGRNItem = (index, field, value) => {
+    const updated = [...grnItems];
+    updated[index][field] = field === 'acceptedQty' || field === 'damagedQty' ? Math.max(0, Number(value) || 0) : value;
+    setGrnItems(updated);
+  };
+
+  const handleSubmitGRN = async () => {
+    if (!activeGRNOrder) return;
+    setGrnSaving(true);
+    setGrnSuccess('');
+    setError('');
+
+    try {
+      const res = await api.post(`/dispatch/orders/${activeGRNOrder._id}/receive`, {
+        receivedItems: grnItems,
+        receiverNotes: grnNotes || 'Confirmed on Web Portal',
+      });
+
+      setGrnSuccess(res.data?.message || 'Goods receipt confirmed & stock committed!');
+      setActiveGRNOrder(null);
+      fetchInventory();
+      fetchDispatches();
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Failed to process goods receipt.');
+    } finally {
+      setGrnSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    let eventSource;
+    try {
+      eventSource = new EventSource(`${API_URL}/inventory/stream`);
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (['quantity_updated', 'transfer_completed', 'item_created', 'item_updated', 'item_deleted'].includes(payload.type)) {
+            fetchInventory();
+          }
+        } catch (_) {}
+      };
+    } catch (_) {}
+
+    return () => {
+      if (eventSource) eventSource.close();
+    };
   }, []);
 
   const fetchInventory = async () => {
@@ -189,7 +272,7 @@ const InventoryManagement = () => {
           </div>
         </Card>
 
-        {/* Stock Movement */}
+        {/* Stock Movement & GRN */}
         <Card>
           <div className="border-b border-slate-200 dark:border-slate-800 flex px-6 overflow-x-auto whitespace-nowrap">
             <button
@@ -200,6 +283,15 @@ const InventoryManagement = () => {
                 }`}
             >
               Current Stock
+            </button>
+            <button
+              onClick={() => setActiveTab('grn')}
+              className={`py-4 px-4 font-semibold border-b-2 transition-colors ${activeTab === 'grn'
+                  ? 'text-primary border-primary'
+                  : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+            >
+              Inward Dispatches (GRN) ({incomingDispatches.filter(d => d.transitStatus !== 'Reconciled').length})
             </button>
             <button
               onClick={() => setActiveTab('movement')}
@@ -220,6 +312,181 @@ const InventoryManagement = () => {
               Transfers
             </button>
           </div>
+
+          {activeTab === 'grn' && (
+            <div className="p-6 space-y-6">
+              {grnSuccess && (
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl flex items-center gap-2">
+                  <span className="material-icons-outlined text-emerald-500">check_circle</span>
+                  <span>{grnSuccess}</span>
+                </div>
+              )}
+
+              {/* Active Inspection Form */}
+              {activeGRNOrder ? (
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-primary/30 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="material-icons-outlined text-primary">fact_check</span>
+                        Inspecting Delivery: {activeGRNOrder.dispatchNumber}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        From: {activeGRNOrder.sourceKitchen?.name || 'Central Kitchen'} | Runner: {activeGRNOrder.runnerName || 'Courier'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveGRNOrder(null)}
+                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 uppercase">
+                          <th className="pb-2">Dish Name</th>
+                          <th className="pb-2 w-28">Dispatched</th>
+                          <th className="pb-2 w-28">Accepted (Good)</th>
+                          <th className="pb-2 w-28">Damaged</th>
+                          <th className="pb-2 w-44">Discrepancy Reason</th>
+                          <th className="pb-2 w-28">Cost Price</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/60 dark:divide-slate-700/60">
+                        {grnItems.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="py-2.5 font-semibold text-slate-800 dark:text-slate-100">{item.dishName}</td>
+                            <td className="py-2.5 font-bold text-blue-600">{item.dispatchedQty} Units</td>
+                            <td className="py-2.5 pr-2">
+                              <input
+                                type="number"
+                                min="0"
+                                max={item.dispatchedQty}
+                                value={item.acceptedQty}
+                                onChange={(e) => handleUpdateGRNItem(idx, 'acceptedQty', e.target.value)}
+                                className="w-full bg-white dark:bg-slate-800 border border-emerald-500/50 rounded px-2 py-1 text-xs font-bold text-emerald-600 focus:outline-none"
+                              />
+                            </td>
+                            <td className="py-2.5 pr-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.damagedQty}
+                                onChange={(e) => handleUpdateGRNItem(idx, 'damagedQty', e.target.value)}
+                                className="w-full bg-white dark:bg-slate-800 border border-rose-500/50 rounded px-2 py-1 text-xs font-bold text-rose-600 focus:outline-none"
+                              />
+                            </td>
+                            <td className="py-2.5 pr-2">
+                              <select
+                                value={item.discrepancyReason}
+                                onChange={(e) => handleUpdateGRNItem(idx, 'discrepancyReason', e.target.value)}
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs"
+                              >
+                                <option value="">-- No Discrepancy --</option>
+                                <option value="Seal Broken">Seal Broken</option>
+                                <option value="Transit Leakage">Transit Leakage</option>
+                                <option value="Temperature Abuse">Temperature Abuse</option>
+                                <option value="Spoilage">Spoilage</option>
+                                <option value="Short Count">Short Count</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            </td>
+                            <td className="py-2.5 font-semibold">Rs {item.unitCostPrice}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <input
+                      type="text"
+                      placeholder="Receiving notes (e.g. Temperature checked 4°C, seal intact)..."
+                      value={grnNotes}
+                      onChange={(e) => setGrnNotes(e.target.value)}
+                      className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs w-96 focus:outline-none"
+                    />
+
+                    <Button
+                      variant="primary"
+                      onClick={handleSubmitGRN}
+                      disabled={grnSaving}
+                      className="text-xs font-bold shadow-md"
+                    >
+                      {grnSaving ? 'Confirming...' : 'Confirm GRN & Commit Stock to Kiosk'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* List of incoming dispatches */
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-700 text-xs text-slate-500 uppercase">
+                        <th className="pb-3">Manifest #</th>
+                        <th className="pb-3">Date</th>
+                        <th className="pb-3">Source Central Kitchen</th>
+                        <th className="pb-3">Dispatched Items</th>
+                        <th className="pb-3">Total Value</th>
+                        <th className="pb-3">Status</th>
+                        <th className="pb-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                      {incomingDispatches.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="py-6 text-center text-slate-400 italic">
+                            No incoming dispatches found for this outlet.
+                          </td>
+                        </tr>
+                      ) : (
+                        incomingDispatches.map((ord) => (
+                          <tr key={ord._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                            <td className="py-3 font-mono font-bold text-primary">{ord.dispatchNumber}</td>
+                            <td className="py-3">{ord.dispatchDate}</td>
+                            <td className="py-3 font-semibold">{ord.sourceKitchen?.name || 'Central Kitchen'}</td>
+                            <td className="py-3">
+                              {ord.totalDispatchedUnits} Units ({(ord.items || []).map(i => i.dishName).slice(0, 2).join(', ')}...)
+                            </td>
+                            <td className="py-3 font-bold">Rs {ord.totalTransferValue}</td>
+                            <td className="py-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  ord.transitStatus === 'Reconciled'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                }`}
+                              >
+                                {ord.transitStatus}
+                              </span>
+                            </td>
+                            <td className="py-3 text-right">
+                              {ord.transitStatus !== 'Reconciled' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartGRN(ord)}
+                                  className="text-xs px-3 py-1 bg-primary text-white rounded font-bold hover:bg-primary-dark transition-colors"
+                                >
+                                  Inspect & Receive
+                                </button>
+                              ) : (
+                                <span className="text-emerald-600 font-semibold flex items-center justify-end gap-1">
+                                  <span className="material-icons-outlined text-sm">verified</span> Reconciled
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
           <div className="p-6 space-y-6">
             <div className="flex items-center text-slate-500 dark:text-slate-400 font-medium text-sm">
               <span className="material-icons-outlined text-sm mr-2">history</span>
