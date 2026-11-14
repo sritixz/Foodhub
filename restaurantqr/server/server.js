@@ -27,6 +27,8 @@ import investorRoutes from './routes/investors.js';
 import makerCheckerRoutes from './routes/makerCheckerRoutes.js';
 import deliveryRoutes from './routes/delivery.js';
 import recipeRoutes from './routes/recipes.js';
+import productionRoutes from './routes/production.js';
+import dispatchRoutes from './routes/dispatch.js';
 import menuRoutes from './routes/menu.js';
 import walletRoutes from './routes/wallet.js';
 import promotionRoutes from './routes/promotions.js';
@@ -83,6 +85,8 @@ app.use('/api/investors', investorRoutes);
 app.use('/api/maker-checker', makerCheckerRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/production', productionRoutes);
+app.use('/api/dispatch', dispatchRoutes);
 // QR Code public endpoint (for scanning)
 app.get('/qr/:qrData', async (req, res) => {
   try {
