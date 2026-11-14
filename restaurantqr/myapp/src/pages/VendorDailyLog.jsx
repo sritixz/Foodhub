@@ -46,6 +46,33 @@ const VendorDailyLog = () => {
     }
   }, [date, selectedOutlet]);
 
+  // Live SSE listener for real-time Central Kitchen dispatch updates
+  useEffect(() => {
+    if (!selectedOutlet) return;
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    let eventSource;
+    try {
+      eventSource = new EventSource(`${API_URL}/ledger/stream`);
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          const eventOutlet = payload.outlet?._id || payload.outlet;
+          if (
+            (payload.type === 'stock_dispatched' || payload.type === 'ledger_submitted') &&
+            eventOutlet?.toString() === selectedOutlet?.toString() &&
+            (!payload.date || payload.date === date)
+          ) {
+            fetchData();
+          }
+        } catch (_) {}
+      };
+    } catch (_) {}
+
+    return () => {
+      if (eventSource) eventSource.close();
+    };
+  }, [selectedOutlet, date]);
+
   const fetchData = async () => {
     setLoading(true);
     setError('');
@@ -103,12 +130,15 @@ const VendorDailyLog = () => {
       // 3. Initialize items state
       const initialItems = outletMenu.map(menuItem => {
         const saleData = digitalSales.find(d => d._id === menuItem._id) || { digitalSoldQty: 0, posSoldQty: 0, digitalRevenue: 0 };
+        const op = (menuItem.outletPricing || []).find(o => o.outlet?._id?.toString() === selectedOutlet.toString() || o.outlet?.toString() === selectedOutlet.toString());
+        const costPrice = op?.costPrice || menuItem.costPrice || 0;
+        const sellingPrice = op?.price || menuItem.basePrice || 0;
         return {
           menuItem: menuItem._id,
           name: menuItem.name,
           category: getMealCategoryOfItem(menuItem._id, menuItem.category?.name),
-          costPrice: menuItem.costPrice || 0,
-          sellingPrice: menuItem.basePrice || 0,
+          costPrice,
+          sellingPrice,
           sentQty: '',
           digitalSoldQty: saleData.digitalSoldQty,
           posSoldQty: saleData.posSoldQty,

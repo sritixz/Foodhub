@@ -212,6 +212,20 @@ router.post('/dispatch', authenticate, authorize('Owner', 'Management', 'Central
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    // Auto-resolve outlet-specific transfer cost price if missing
+    for (const dispatchItem of items) {
+      if (!dispatchItem.costPrice || dispatchItem.costPrice <= 0) {
+        try {
+          const mItem = await MenuItem.findById(dispatchItem.menuItem);
+          if (mItem) {
+            const op = (mItem.outletPricing || []).find(o => o.outlet?.toString() === outlet.toString());
+            dispatchItem.costPrice = op?.costPrice || mItem.costPrice || 0;
+            if (!dispatchItem.sellingPrice) dispatchItem.sellingPrice = op?.price || mItem.basePrice || 0;
+          }
+        } catch (_) {}
+      }
+    }
+
     let ledger = await DailyLedger.findOne({ date, outlet });
     if (!ledger) {
       // Create draft
