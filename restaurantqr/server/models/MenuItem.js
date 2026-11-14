@@ -21,6 +21,10 @@ const outletPricingSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  costPrice: {
+    type: Number,
+    default: 0,
+  },
   isAvailable: {
     type: Boolean,
     default: true,
@@ -129,6 +133,11 @@ const menuItemSchema = new mongoose.Schema(
     costPrice: {
       type: Number,
       default: 0,
+    },
+    recipe: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Recipe',
+      default: null,
     },
     basePrice: {
       type: Number,
