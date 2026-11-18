@@ -21,6 +21,53 @@ const InventoryManagement = () => {
   const [grnNotes, setGrnNotes] = useState('');
   const [grnSaving, setGrnSaving] = useState(false);
   const [grnSuccess, setGrnSuccess] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: '',
+    quantity: '',
+    unit: 'Kg',
+    threshold: 10,
+    category: 'Other',
+  });
+  const [addingStock, setAddingStock] = useState(false);
+  const [addSuccess, setAddSuccess] = useState('');
+
+  const handleSaveNewStock = async (e) => {
+    e.preventDefault();
+    if (!addForm.name || !addForm.quantity) return;
+    setAddingStock(true);
+    setError('');
+    setAddSuccess('');
+    try {
+      await api.post('/inventory', {
+        name: addForm.name,
+        quantity: Number(addForm.quantity),
+        unit: addForm.unit,
+        threshold: Number(addForm.threshold) || 10,
+        category: addForm.category,
+      });
+      setAddSuccess(`Successfully added ${addForm.quantity} ${addForm.unit} of ${addForm.name}!`);
+      setShowAddModal(false);
+      setAddForm({ name: '', quantity: '', unit: 'Kg', threshold: 10, category: 'Other' });
+      fetchInventory();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to save inventory item');
+    } finally {
+      setAddingStock(false);
+    }
+  };
+
+  const handleQuickAdjust = async (item, delta) => {
+    try {
+      await api.patch(`/inventory/${item._id}/quantity`, {
+        quantity: Math.abs(delta),
+        operation: delta > 0 ? 'add' : 'subtract',
+      });
+      fetchInventory();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     fetchInventory();
@@ -158,7 +205,118 @@ const InventoryManagement = () => {
             <p className="mt-4 text-slate-600 dark:text-slate-400">Loading inventory...</p>
           </div>
         </div>
-      </Layout>
+  
+      {/* Add Stock Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="material-icons-outlined text-primary">inventory_2</span>
+                Add Raw Material / Stock
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <span className="material-icons-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewStock} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                  Item / Ingredient Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Amul Table Butter, Fresh Malai Paneer"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Quantity to Add
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="e.g. 4 or 45"
+                    value={addForm.quantity}
+                    onChange={(e) => setAddForm({ ...addForm, quantity: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Unit
+                  </label>
+                  <select
+                    value={addForm.unit}
+                    onChange={(e) => setAddForm({ ...addForm, unit: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Kg">Kg</option>
+                    <option value="L">L</option>
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="pcs">pcs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={addForm.category}
+                    onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Oils">Oils</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Other">Other (Dairy / Packaging)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Alert Threshold
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={addForm.threshold}
+                    onChange={(e) => setAddForm({ ...addForm, threshold: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <Button variant="outline" type="button" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addingStock}>
+                  {addingStock ? 'Saving...' : 'Add to Stock'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </Layout>
     );
   }
 
@@ -172,7 +330,7 @@ const InventoryManagement = () => {
               <span className="material-icons-outlined mr-2 text-xl">swap_horiz</span>
               Transfer Stock
             </Button>
-            <Button>
+            <Button onClick={() => setShowAddModal(true)}>
               <span className="material-icons-outlined mr-2 text-xl">add</span>
               Add Stock
             </Button>
@@ -260,9 +418,24 @@ const InventoryManagement = () => {
                         {item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="text-slate-400 hover:text-primary transition-colors">
-                          <span className="material-icons-outlined">more_vert</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            title="Quick Deduct 1"
+                            onClick={() => handleQuickAdjust(item, -1)}
+                            className="w-6 h-6 rounded bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 text-xs font-bold flex items-center justify-center transition-colors"
+                          >
+                            -
+                          </button>
+                          <button
+                            type="button"
+                            title="Quick Add 1"
+                            onClick={() => handleQuickAdjust(item, 1)}
+                            className="w-6 h-6 rounded bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-600 text-xs font-bold flex items-center justify-center transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -530,6 +703,117 @@ const InventoryManagement = () => {
           </div>
         </Card>
       </div>
+
+      {/* Add Stock Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="material-icons-outlined text-primary">inventory_2</span>
+                Add Raw Material / Stock
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <span className="material-icons-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewStock} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                  Item / Ingredient Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Amul Table Butter, Fresh Malai Paneer"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Quantity to Add
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="e.g. 4 or 45"
+                    value={addForm.quantity}
+                    onChange={(e) => setAddForm({ ...addForm, quantity: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Unit
+                  </label>
+                  <select
+                    value={addForm.unit}
+                    onChange={(e) => setAddForm({ ...addForm, unit: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Kg">Kg</option>
+                    <option value="L">L</option>
+                    <option value="g">g</option>
+                    <option value="ml">ml</option>
+                    <option value="pcs">pcs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={addForm.category}
+                    onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Oils">Oils</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Spices">Spices</option>
+                    <option value="Other">Other (Dairy / Packaging)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                    Alert Threshold
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={addForm.threshold}
+                    onChange={(e) => setAddForm({ ...addForm, threshold: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <Button variant="outline" type="button" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addingStock}>
+                  {addingStock ? 'Saving...' : 'Add to Stock'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

@@ -176,6 +176,15 @@ router.get('/:id', authenticate, authorize('Owner', 'Management', 'Central Kitch
 // Create inventory item (protected - Owner/Management/Central Kitchen Manager)
 router.post('/', authenticate, authorize('Owner', 'Management', 'Central Kitchen Manager'), async (req, res) => {
   try {
+    if (!req.body.sku) {
+      req.body.sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
+    }
+    if (!req.body.branch) {
+      const Warehouse = (await import('../models/Warehouse.js')).default;
+      const Outlet = (await import('../models/Outlet.js')).default;
+      const wh = await Warehouse.findOne({ isCentralKitchen: true }) || await Outlet.findOne({});
+      req.body.branch = wh?._id;
+    }
     const inventory = new Inventory(req.body);
     const savedInventory = await inventory.save();
     const populated = await Inventory.findById(savedInventory._id).populate('branch', 'name outletId');
