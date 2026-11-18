@@ -5,9 +5,109 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import api from '../utils/api';
 
+const PREFILLED_DEMAND = [
+  {
+    itemName: 'Paneer Butter Masala Meal Tray',
+    totalRequestedQty: 120,
+    indentsCount: 3,
+    urgency: 'High',
+    outletsBreakdown: [
+      { outletName: 'Rexel India - Kiosk 1', qty: 50, urgency: 'High', indentNumber: 'IND-MOPY-101' },
+      { outletName: 'DLF CyberCity Hub 2', qty: 40, urgency: 'Normal', indentNumber: 'IND-MOPY-102' },
+      { outletName: 'Phoenix Mills Lower Parel', qty: 30, urgency: 'High', indentNumber: 'IND-MOPY-103' },
+    ],
+  },
+  {
+    itemName: 'Rajma Chawal Homestyle Bowl',
+    totalRequestedQty: 80,
+    indentsCount: 2,
+    urgency: 'Normal',
+    outletsBreakdown: [
+      { outletName: 'Rexel India - Kiosk 1', qty: 50, urgency: 'Normal', indentNumber: 'IND-MOPY-104' },
+      { outletName: 'Kent Healthcare Building', qty: 30, urgency: 'Normal', indentNumber: 'IND-MOPY-105' },
+    ],
+  },
+  {
+    itemName: 'Healthy Quinoa Buddha Bowl',
+    totalRequestedQty: 45,
+    indentsCount: 1,
+    urgency: 'Critical',
+    outletsBreakdown: [
+      { outletName: 'DLF CyberCity Hub 2', qty: 45, urgency: 'Critical', indentNumber: 'IND-MOPY-106' },
+    ],
+  },
+];
+
+const PREFILLED_BATCHES = [
+  {
+    _id: 'batch-mock-001',
+    batchNumber: 'B-20261118-001',
+    dishName: 'Paneer Butter Masala Meal Tray',
+    plannedYield: 120,
+    actualYield: 120,
+    yieldUnit: 'Plates',
+    actualCostPerPlate: 111.77,
+    remainingStagedQty: 100,
+    status: 'Completed',
+    prepDate: new Date().toISOString(),
+  },
+  {
+    _id: 'batch-mock-002',
+    batchNumber: 'B-20261118-002',
+    dishName: 'Rajma Chawal Homestyle Bowl',
+    plannedYield: 80,
+    actualYield: 80,
+    yieldUnit: 'Plates',
+    actualCostPerPlate: 64.50,
+    remainingStagedQty: 80,
+    status: 'Completed',
+    prepDate: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    _id: 'batch-mock-003',
+    batchNumber: 'B-20261118-003',
+    dishName: 'Veg Hakka Noodles & Manchurian Combo',
+    plannedYield: 90,
+    actualYield: 90,
+    yieldUnit: 'Plates',
+    actualCostPerPlate: 78.20,
+    remainingStagedQty: 30,
+    dispatchedQty: 60,
+    status: 'Dispatched',
+    prepDate: new Date(Date.now() - 7200000).toISOString(),
+  },
+  {
+    _id: 'batch-mock-004',
+    batchNumber: 'B-20261118-004',
+    dishName: 'Healthy Quinoa Buddha Bowl',
+    plannedYield: 50,
+    actualYield: 50,
+    yieldUnit: 'Packs',
+    actualCostPerPlate: 88.00,
+    remainingStagedQty: 50,
+    status: 'Completed',
+    prepDate: new Date(Date.now() - 10800000).toISOString(),
+  },
+];
+
+const INITIAL_STOCK_CHECK = {
+  recipeTitle: 'Paneer Butter Masala Meal Tray',
+  plannedYield: 120,
+  allSufficient: true,
+  ingredientsCheck: [
+    { name: 'Fresh Malai Paneer', unit: 'kg', requiredQty: 18.0, availableStock: 45.0, deficit: 0, isSufficient: true, unitCost: 340, estimatedCost: 6242.4 },
+    { name: 'Amul Table Butter', unit: 'kg', requiredQty: 4.2, availableStock: 12.0, deficit: 0, isSufficient: true, unitCost: 480, estimatedCost: 2016.0 },
+    { name: 'Fresh Cream (Amul)', unit: 'L', requiredQty: 2.4, availableStock: 8.0, deficit: 0, isSufficient: true, unitCost: 210, estimatedCost: 509.04 },
+    { name: 'Tomato Makhani Gravy', unit: 'kg', requiredQty: 14.4, availableStock: 30.0, deficit: 0, isSufficient: true, unitCost: 65, estimatedCost: 982.8 },
+    { name: 'Steamed Basmati Rice', unit: 'kg', requiredQty: 24.0, availableStock: 85.0, deficit: 0, isSufficient: true, unitCost: 75, estimatedCost: 1854.0 },
+  ],
+  estimatedBatchCost: 13412.41,
+  estimatedCostPerPlate: 111.77,
+};
+
 const ProductionBatchManager = () => {
-  const [batches, setBatches] = useState([]);
-  const [consolidatedDemand, setConsolidatedDemand] = useState([]);
+  const [batches, setBatches] = useState(PREFILLED_BATCHES);
+  const [consolidatedDemand, setConsolidatedDemand] = useState(PREFILLED_DEMAND);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,8 +115,8 @@ const ProductionBatchManager = () => {
 
   // Batch Planning State
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
-  const [plannedYield, setPlannedYield] = useState(100);
-  const [stockCheckResult, setStockCheckResult] = useState(null);
+  const [plannedYield, setPlannedYield] = useState(120);
+  const [stockCheckResult, setStockCheckResult] = useState(INITIAL_STOCK_CHECK);
   const [checkingStock, setCheckingStock] = useState(false);
   const [producing, setProducing] = useState(false);
 
@@ -34,8 +134,12 @@ const ProductionBatchManager = () => {
         api.get('/recipes').catch(() => ({ data: [] })),
       ]);
 
-      setBatches(batchRes.data || []);
-      setConsolidatedDemand(demandRes.data || []);
+      if (batchRes.data && batchRes.data.length > 0) {
+        setBatches(batchRes.data);
+      }
+      if (demandRes.data && demandRes.data.length > 0) {
+        setConsolidatedDemand(demandRes.data);
+      }
       setRecipes(recRes.data || []);
       if (recRes.data?.length > 0 && !selectedRecipeId) {
         setSelectedRecipeId(recRes.data[0]._id);
@@ -370,7 +474,7 @@ const ProductionBatchManager = () => {
                     <tr key={b._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                       <td className="py-3 font-mono font-bold text-primary">{b.batchNumber}</td>
                       <td className="py-3 font-semibold text-slate-800 dark:text-slate-100">
-                        {b.menuItem?.name || b.recipe?.title || 'Dish'}
+                        {b.menuItem?.name || b.recipe?.title || b.dishName || 'Dish'}
                       </td>
                       <td className="py-3">{b.plannedYield} {b.yieldUnit}</td>
                       <td className="py-3 font-semibold">Rs {b.actualCostPerPlate}</td>
