@@ -120,20 +120,82 @@ const DEFAULT_RECIPES = [
   },
 ];
 
-const INITIAL_STOCK_CHECK = {
-  recipeTitle: 'Paneer Butter Masala Meal Tray',
-  plannedYield: 120,
-  allSufficient: true,
-  ingredientsCheck: [
-    { name: 'Fresh Malai Paneer', unit: 'kg', requiredQty: 18.0, availableStock: 45.0, deficit: 0, isSufficient: true, unitCost: 340, estimatedCost: 6242.4 },
-    { name: 'Amul Table Butter', unit: 'kg', requiredQty: 4.2, availableStock: 12.0, deficit: 0, isSufficient: true, unitCost: 480, estimatedCost: 2016.0 },
-    { name: 'Fresh Cream (Amul)', unit: 'L', requiredQty: 2.4, availableStock: 8.0, deficit: 0, isSufficient: true, unitCost: 210, estimatedCost: 509.04 },
-    { name: 'Tomato Makhani Gravy', unit: 'kg', requiredQty: 14.4, availableStock: 30.0, deficit: 0, isSufficient: true, unitCost: 65, estimatedCost: 982.8 },
-    { name: 'Steamed Basmati Rice', unit: 'kg', requiredQty: 24.0, availableStock: 85.0, deficit: 0, isSufficient: true, unitCost: 75, estimatedCost: 1854.0 },
-  ],
-  estimatedBatchCost: 13412.41,
-  estimatedCostPerPlate: 111.77,
+const RECIPE_STOCK_TEMPLATES = {
+  paneer: {
+    recipeTitle: 'Paneer Butter Masala Meal Tray',
+    standardYield: 100,
+    perPlateCost: 111.77,
+    ingredients: [
+      { name: 'Fresh Malai Paneer', unit: 'kg', baseQty: 15.0, availableStock: 45.0, unitCost: 340 },
+      { name: 'Amul Table Butter', unit: 'kg', baseQty: 3.5, availableStock: 12.0, unitCost: 480 },
+      { name: 'Fresh Cream (Amul)', unit: 'L', baseQty: 2.0, availableStock: 8.0, unitCost: 210 },
+      { name: 'Tomato Makhani Gravy', unit: 'kg', baseQty: 12.0, availableStock: 30.0, unitCost: 65 },
+      { name: 'Steamed Basmati Rice', unit: 'kg', baseQty: 20.0, availableStock: 85.0, unitCost: 75 },
+    ],
+  },
+  rajma: {
+    recipeTitle: 'Rajma Chawal Homestyle Bowl',
+    standardYield: 80,
+    perPlateCost: 63.49,
+    ingredients: [
+      { name: 'Kashmiri Rajma', unit: 'kg', baseQty: 10.0, availableStock: 40.0, unitCost: 120 },
+      { name: 'Steamed Basmati Rice', unit: 'kg', baseQty: 18.0, availableStock: 85.0, unitCost: 75 },
+      { name: 'Onion Tomato Masala', unit: 'kg', baseQty: 8.0, availableStock: 25.0, unitCost: 60 },
+      { name: 'Pure Desi Ghee', unit: 'kg', baseQty: 1.5, availableStock: 10.0, unitCost: 600 },
+    ],
+  },
+  quinoa: {
+    recipeTitle: 'Healthy Quinoa Buddha Bowl',
+    standardYield: 45,
+    perPlateCost: 89.5,
+    ingredients: [
+      { name: 'Organic White Quinoa', unit: 'kg', baseQty: 9.0, availableStock: 25.0, unitCost: 220 },
+      { name: 'Fresh Hass Avocado', unit: 'kg', baseQty: 4.5, availableStock: 15.0, unitCost: 350 },
+      { name: 'Baby Spinach & Salad Greens', unit: 'kg', baseQty: 6.0, availableStock: 20.0, unitCost: 140 },
+      { name: 'Extra Virgin Olive Oil', unit: 'L', baseQty: 1.5, availableStock: 8.0, unitCost: 680 },
+    ],
+  },
 };
+
+const getStockCheckForRecipe = (recipeTitleOrObj, plannedYield) => {
+  const title = (typeof recipeTitleOrObj === 'string' ? recipeTitleOrObj : recipeTitleOrObj?.title || '').toLowerCase();
+  let template = RECIPE_STOCK_TEMPLATES.paneer;
+  if (title.includes('rajma')) template = RECIPE_STOCK_TEMPLATES.rajma;
+  else if (title.includes('quinoa')) template = RECIPE_STOCK_TEMPLATES.quinoa;
+
+  const yieldCount = Number(plannedYield) || 120;
+  const ratio = yieldCount / template.standardYield;
+
+  const ingredientsCheck = template.ingredients.map((ing) => {
+    const requiredQty = parseFloat((ing.baseQty * ratio).toFixed(2));
+    const isSufficient = ing.availableStock >= requiredQty;
+    const estimatedCost = parseFloat((requiredQty * ing.unitCost).toFixed(2));
+    return {
+      name: ing.name,
+      unit: ing.unit,
+      requiredQty,
+      availableStock: ing.availableStock,
+      deficit: isSufficient ? 0 : parseFloat((requiredQty - ing.availableStock).toFixed(2)),
+      isSufficient,
+      unitCost: ing.unitCost,
+      estimatedCost,
+    };
+  });
+
+  const allSufficient = ingredientsCheck.every((i) => i.isSufficient);
+  const estimatedBatchCost = parseFloat((template.perPlateCost * yieldCount).toFixed(2));
+
+  return {
+    recipeTitle: template.recipeTitle,
+    plannedYield: yieldCount,
+    allSufficient,
+    ingredientsCheck,
+    estimatedBatchCost,
+    estimatedCostPerPlate: template.perPlateCost,
+  };
+};
+
+const INITIAL_STOCK_CHECK = getStockCheckForRecipe('paneer', 120);
 
 const ProductionBatchManager = () => {
   const [batches, setBatches] = useState(PREFILLED_BATCHES);
@@ -192,20 +254,9 @@ const ProductionBatchManager = () => {
     setError('');
 
     try {
+      const chosenRec = recipes.find((r) => r._id === selectedRecipeId) || recipes[0];
       if (typeof selectedRecipeId === 'string' && selectedRecipeId.startsWith('rec-')) {
-        const activeRec = recipes.find(r => r._id === selectedRecipeId) || recipes[0];
-        setStockCheckResult({
-          recipeTitle: activeRec?.title || 'Paneer Butter Masala Meal Tray',
-          plannedYield: Number(plannedYield),
-          allSufficient: true,
-          ingredientsCheck: INITIAL_STOCK_CHECK.ingredientsCheck.map(i => ({
-            ...i,
-            requiredQty: parseFloat(((i.requiredQty / 120) * Number(plannedYield)).toFixed(2)),
-            estimatedCost: parseFloat(((i.estimatedCost / 120) * Number(plannedYield)).toFixed(2)),
-          })),
-          estimatedBatchCost: parseFloat(((activeRec?.perPlateCost || 111.77) * Number(plannedYield)).toFixed(2)),
-          estimatedCostPerPlate: activeRec?.perPlateCost || 111.77,
-        });
+        setStockCheckResult(getStockCheckForRecipe(chosenRec, plannedYield));
         setCheckingStock(false);
         return;
       }
@@ -217,15 +268,8 @@ const ProductionBatchManager = () => {
       setStockCheckResult(res.data);
     } catch (err) {
       console.warn('Fallback stock check:', err);
-      const activeRec = recipes.find(r => r._id === selectedRecipeId) || recipes[0];
-      setStockCheckResult({
-        recipeTitle: activeRec?.title || 'Selected Recipe',
-        plannedYield: Number(plannedYield),
-        allSufficient: true,
-        ingredientsCheck: INITIAL_STOCK_CHECK.ingredientsCheck,
-        estimatedBatchCost: parseFloat(((activeRec?.perPlateCost || 111.77) * Number(plannedYield)).toFixed(2)),
-        estimatedCostPerPlate: activeRec?.perPlateCost || 111.77,
-      });
+      const chosenRec = recipes.find((r) => r._id === selectedRecipeId) || recipes[0];
+      setStockCheckResult(getStockCheckForRecipe(chosenRec, plannedYield));
     } finally {
       setCheckingStock(false);
     }
@@ -286,12 +330,11 @@ const ProductionBatchManager = () => {
 
   const handleSelectFromDemand = (demandItem) => {
     setError('');
+    let chosenId = '';
     if (demandItem.linkedRecipe?._id) {
-      setSelectedRecipeId(demandItem.linkedRecipe._id);
-      setPlannedYield(demandItem.totalRequestedQty);
+      chosenId = demandItem.linkedRecipe._id;
     } else {
       const demandTitle = demandItem.itemName.toLowerCase();
-      // Match by exact title, or substring, or dish keyword (e.g. paneer, rajma, quinoa)
       const match = recipes.find(
         (r) =>
           r.title.toLowerCase() === demandTitle ||
@@ -301,15 +344,13 @@ const ProductionBatchManager = () => {
           (demandTitle.includes('rajma') && r.title.toLowerCase().includes('rajma')) ||
           (demandTitle.includes('quinoa') && r.title.toLowerCase().includes('quinoa'))
       );
-      if (match) {
-        setSelectedRecipeId(match._id);
-        setPlannedYield(demandItem.totalRequestedQty);
-      } else if (recipes.length > 0) {
-        setSelectedRecipeId(recipes[0]._id);
-        setPlannedYield(demandItem.totalRequestedQty);
-      } else {
-        setError(`No active recipe found matching "${demandItem.itemName}". Create one in Recipe Studio first.`);
-      }
+      chosenId = match?._id || recipes[0]?._id;
+    }
+
+    if (chosenId) {
+      setSelectedRecipeId(chosenId);
+      setPlannedYield(demandItem.totalRequestedQty);
+      setStockCheckResult(getStockCheckForRecipe(demandItem.itemName, demandItem.totalRequestedQty));
     }
   };
 
@@ -417,8 +458,10 @@ const ProductionBatchManager = () => {
                   <select
                     value={selectedRecipeId}
                     onChange={(e) => {
-                      setSelectedRecipeId(e.target.value);
-                      setStockCheckResult(null);
+                      const newId = e.target.value;
+                      setSelectedRecipeId(newId);
+                      const chosenRec = recipes.find((r) => r._id === newId);
+                      setStockCheckResult(getStockCheckForRecipe(chosenRec?.title || '', plannedYield));
                     }}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
@@ -437,8 +480,10 @@ const ProductionBatchManager = () => {
                     min="1"
                     value={plannedYield}
                     onChange={(e) => {
-                      setPlannedYield(e.target.value);
-                      setStockCheckResult(null);
+                      const newYield = e.target.value;
+                      setPlannedYield(newYield);
+                      const chosenRec = recipes.find((r) => r._id === selectedRecipeId);
+                      setStockCheckResult(getStockCheckForRecipe(chosenRec?.title || '', newYield));
                     }}
                   />
                 </div>

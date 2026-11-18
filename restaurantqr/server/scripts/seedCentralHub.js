@@ -1,3 +1,4 @@
+import Inventory from '../models/Inventory.js';
 import Warehouse from '../models/Warehouse.js';
 import Recipe from '../models/Recipe.js';
 import MenuItem from '../models/MenuItem.js';
@@ -128,6 +129,26 @@ export async function seedCentralKitchenAndRecipes() {
         await r2.save();
         console.log('✓ Seeded Recipe:', r2.title);
       }
+    }
+
+    // 3. Ensure Central Kitchen Raw Material Inventory exists
+    const invCount = await Inventory.countDocuments({});
+    if (invCount === 0) {
+      console.log('Seeding Central Kitchen Raw Material Stock...');
+      const centralStock = [
+        { name: 'Fresh Malai Paneer', sku: 'RAW-PAN-001', unit: 'Kg', quantity: 45, threshold: 10, branch: kitchen._id, category: 'Other' },
+        { name: 'Amul Table Butter', sku: 'RAW-BUT-002', unit: 'Kg', quantity: 12, threshold: 5, branch: kitchen._id, category: 'Other' },
+        { name: 'Fresh Cream', sku: 'RAW-CRM-003', unit: 'L', quantity: 8, threshold: 3, branch: kitchen._id, category: 'Other' },
+        { name: 'Tomato Makhani Gravy', sku: 'RAW-MKH-004', unit: 'Kg', quantity: 30, threshold: 10, branch: kitchen._id, category: 'Vegetables' },
+        { name: 'Steamed Basmati Rice', sku: 'RAW-RIC-005', unit: 'Kg', quantity: 85, threshold: 20, branch: kitchen._id, category: 'Grains' },
+        { name: 'Kashmiri Rajma', sku: 'RAW-RAJ-006', unit: 'Kg', quantity: 40, threshold: 10, branch: kitchen._id, category: 'Grains' },
+        { name: 'Onion Tomato Masala', sku: 'RAW-OTM-007', unit: 'Kg', quantity: 25, threshold: 5, branch: kitchen._id, category: 'Vegetables' },
+        { name: 'Pure Desi Ghee', sku: 'RAW-GHE-008', unit: 'Kg', quantity: 10, threshold: 3, branch: kitchen._id, category: 'Oils' },
+        { name: 'Organic White Quinoa', sku: 'RAW-QNA-009', unit: 'Kg', quantity: 25, threshold: 5, branch: kitchen._id, category: 'Grains' },
+        { name: 'Fresh Hass Avocado', sku: 'RAW-AVO-010', unit: 'Kg', quantity: 15, threshold: 3, branch: kitchen._id, category: 'Vegetables' },
+      ];
+      await Inventory.insertMany(centralStock);
+      console.log('✓ Seeded Central Kitchen Raw Material Inventory (10 items)');
     }
   } catch (err) {
     console.warn('Seed central hub warning (non-fatal):', err.message);
