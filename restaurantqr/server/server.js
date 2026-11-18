@@ -33,13 +33,15 @@ import menuRoutes from './routes/menu.js';
 import walletRoutes from './routes/wallet.js';
 import promotionRoutes from './routes/promotions.js';
 import { seedOfficialOutlets } from './scripts/seedOutlets.js';
+import { seedCentralKitchenAndRecipes } from './scripts/seedCentralHub.js';
 
 // Load environment variables
 dotenv.config();
 
 // Connect to database and seed official outlets
-connectDB().then(() => {
-  seedOfficialOutlets();
+connectDB().then(async () => {
+  await seedOfficialOutlets();
+  await seedCentralKitchenAndRecipes();
 });
 
 const app = express();

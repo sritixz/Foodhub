@@ -223,10 +223,21 @@ router.post(
         kitchen = await Warehouse.findById(centralKitchenId);
       }
       if (!kitchen) {
-        kitchen = await Warehouse.findOne({ isCentralKitchen: true }) || await Warehouse.findOne({});
+        kitchen = (await Warehouse.findOne({ isCentralKitchen: true })) || (await Warehouse.findOne({}));
       }
       if (!kitchen) {
-        return res.status(400).json({ message: 'No Central Kitchen warehouse found. Please register one first.' });
+        kitchen = new Warehouse({
+          name: 'MOPY Central Commissary & Kitchen Hub',
+          address: 'Plot 42, Food Tech Park, Industrial Corridor',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          zone: 'West Zone',
+          contactName: 'Executive Chef Anand',
+          contactPhone: '+91 98765 43210',
+          isCentralKitchen: true,
+          isActive: true,
+        });
+        await kitchen.save();
       }
 
       const yieldCount = Number(plannedYield);
