@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/Layout/Layout';
 import Card from '../components/UI/Card';
 import Button from '../components/UI/Button';
@@ -133,60 +133,8 @@ const RecipeStudio = () => {
     }
   };
 
-  const initOutletRules = (outletList, baseCost = 84.65) => {
-    const rules = outletList.map((out, idx) => ({
-      outlet: out._id,
-      outletName: out.name,
-      freightCost: idx === 0 ? 4.5 : idx === 1 ? 8.5 : 12.0,
-      handlingFee: idx === 0 ? 2.0 : 3.0,
-      finalCostPrice: parseFloat((baseCost + (idx === 0 ? 6.5 : idx === 1 ? 11.5 : 15.0)).toFixed(2)),
-      targetSellingPrice: 220 + idx * 20,
-      marginPercent: 45.4,
-      manualOverride: false,
-    }));
-    setOutletRules(rules);
-  };
-
-  // Switch recipe selection
-  const handleSelectRecipe = (id) => {
-    setSelectedRecipeId(id);
-    if (id === 'new') {
-      setTitle('');
-      setRecipeCode('');
-      setSelectedMenuItem('');
-      initOutletRules(outlets);
-      return;
-    }
-    const found = recipesList.find((r) => r._id === id);
-    if (found) {
-      setTitle(found.title);
-      setRecipeCode(found.recipeCode);
-      setCategory(found.category || 'Full Meal');
-      setSelectedMenuItem(found.menuItem?._id || found.menuItem || '');
-      setStandardYield(found.standardYield || 100);
-      setYieldUnit(found.yieldUnit || 'Plates');
-      setDefaultValuationMode(found.defaultValuationMode || 'WAC');
-      setIngredients(found.ingredients || []);
-      setPrepExpenses(found.prepExpenses || {});
-      setAllergens(found.allergens || []);
-      setInstructions(found.instructions || []);
-      if (found.storageSpecs) setStorageSpecs(found.storageSpecs);
-
-      if (found.outletTransferRules && found.outletTransferRules.length > 0) {
-        setOutletRules(
-          found.outletTransferRules.map((rule) => ({
-            ...rule,
-            outletName: rule.outlet?.name || outlets.find((o) => o._id === rule.outlet)?.name || 'Outlet',
-          }))
-        );
-      } else {
-        initOutletRules(outlets, found.perPlateCost || 84.65);
-      }
-    }
-  };
-
-  // Calculation helpers
-  const calculateDerivedTotals = () => {
+  // Derived Calculation helper (Live Food Cost)
+  const totals = useMemo(() => {
     const totalRaw = ingredients.reduce((sum, ing) => {
       const raw = (Number(ing.quantity) || 0) * (Number(ing.unitCostSnapshot) || 0);
       const wastage = 1 + (Number(ing.wastagePercent) || 0) / 100;
@@ -214,9 +162,93 @@ const RecipeStudio = () => {
       totalBatchCost: parseFloat(totalBatch.toFixed(2)),
       perPlateCost: parseFloat(perPlate.toFixed(2)),
     };
+  }, [ingredients, prepExpenses, standardYield]);
+
+  // Synchronize dynamic per-plate cost to outlet transfer matrix if not manually overridden
+  useEffect(() => {
+    if (outletRules.length > 0 && totals.perPlateCost > 0) {
+      setOutletRules((prev) =>
+        prev.map((rule) => {
+          if (!rule.manualOverride) {
+            const finalCost = parseFloat(
+              (totals.perPlateCost + (Number(rule.freightCost) || 0) + (Number(rule.handlingFee) || 0)).toFixed(2)
+            );
+            const targetSelling = Number(rule.targetSellingPrice) || 0;
+            const margin =
+              targetSelling > 0
+                ? parseFloat((((targetSelling - finalCost) / targetSelling) * 100).toFixed(1))
+                : 0;
+            return {
+              ...rule,
+              finalCostPrice: finalCost,
+              marginPercent: margin,
+            };
+          }
+          return rule;
+        })
+      );
+    }
+  }, [totals.perPlateCost]);
+
+  const initOutletRules = (outletList, baseCost = null) => {
+    const currentBase = baseCost !== null ? baseCost : (totals.perPlateCost || 111.77);
+    const rules = outletList.map((out, idx) => {
+      const freight = idx === 0 ? 4.5 : idx === 1 ? 8.5 : 12.0;
+      const handling = idx === 0 ? 2.0 : 3.0;
+      const finalCost = parseFloat((currentBase + freight + handling).toFixed(2));
+      const targetSelling = 220 + idx * 20;
+      const margin = targetSelling > 0 ? parseFloat((((targetSelling - finalCost) / targetSelling) * 100).toFixed(1)) : 0;
+      return {
+        outlet: out._id,
+        outletName: out.name,
+        freightCost: freight,
+        handlingFee: handling,
+        finalCostPrice: finalCost,
+        targetSellingPrice: targetSelling,
+        marginPercent: margin,
+        manualOverride: false,
+      };
+    });
+    setOutletRules(rules);
   };
 
-  const totals = calculateDerivedTotals();
+  // Switch recipe selection
+  const handleSelectRecipe = (id) => {
+    setSelectedRecipeId(id);
+    if (id === 'new') {
+      setTitle('');
+      setRecipeCode('');
+      setSelectedMenuItem('');
+      initOutletRules(outlets, totals.perPlateCost);
+      return;
+    }
+    const found = recipesList.find((r) => r._id === id);
+    if (found) {
+      setTitle(found.title);
+      setRecipeCode(found.recipeCode);
+      setCategory(found.category || 'Full Meal');
+      setSelectedMenuItem(found.menuItem?._id || found.menuItem || '');
+      setStandardYield(found.standardYield || 100);
+      setYieldUnit(found.yieldUnit || 'Plates');
+      setDefaultValuationMode(found.defaultValuationMode || 'WAC');
+      setIngredients(found.ingredients || []);
+      setPrepExpenses(found.prepExpenses || {});
+      setAllergens(found.allergens || []);
+      setInstructions(found.instructions || []);
+      if (found.storageSpecs) setStorageSpecs(found.storageSpecs);
+
+      if (found.outletTransferRules && found.outletTransferRules.length > 0) {
+        setOutletRules(
+          found.outletTransferRules.map((rule) => ({
+            ...rule,
+            outletName: rule.outlet?.name || outlets.find((o) => o._id === rule.outlet)?.name || 'Outlet',
+          }))
+        );
+      } else {
+        initOutletRules(outlets, found.perPlateCost || totals.perPlateCost);
+      }
+    }
+  };
 
   // Ingredient Handlers
   const handleAddIngredient = () => {
